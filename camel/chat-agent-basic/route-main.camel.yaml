@@ -1,0 +1,23 @@
+- route:
+    id: main
+    from:
+      uri: platform-http:/camel/chat
+      steps:
+        - process:
+            description: AI message
+            ref: createChatMessage
+        - to:
+            description: call LLM
+            uri: langchain4j-tools
+            parameters:
+              chatModel: "#chatModelMain"
+              tags: all
+              toolId: myllm
+        - setHeader:
+            id: setHeader-3277
+            expression:
+              simple:
+                expression: " no-cache"
+            name: Cache-Control
+        - log:
+            message: ${body}

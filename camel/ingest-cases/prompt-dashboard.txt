@@ -1,0 +1,24 @@
+Please build for me an HTML page with title should "Admin Dashboard".
+All the sources generated should live in a single HTML page.
+
+The page connects via WebSocket to a local server.
+The local server will push events to the page, similar to this:
+{
+	"id":"123456",
+	"summary":"Client has been charged twice",
+	"executionPlan":["Refund overcharge","send discount voucher"]
+}
+
+For each event received the page should display the information in a table, mapping each one of the event fields to a column in the table.
+The table should include an additional column to accomodate in each row added two buttons the user can click.
+
+Rows added to the table should include an Approve (green) and Discard button (red), side by side
+Rows added to the table should alternate background colours with soft colors, for example white and grey
+
+The table should use the full width of the screen.
+Make the table pretty and the header with some soft background color.
+
+The field executionPlan should be displayed as a list of bullet points.
+
+When the buttons are clicked by the user, the row should be eliminated from the table, 
+and the page should send an event to the server that includes the id of the row and the action taken by the user.

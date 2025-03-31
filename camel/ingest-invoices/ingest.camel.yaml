@@ -1,0 +1,281 @@
+- route:
+    id: ingestor
+    from:
+      uri: aws2-s3
+      parameters:
+        accessKey: minio
+        bucketNameOrArn: ingest
+        destinationBucket: invoices
+        forcePathStyle: true
+        moveAfterRead: true
+        overrideEndpoint: true
+        region: ap-south-2
+        secretKey: minio123
+        uriEndpointOverride: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+      steps:
+        - to:
+            id: to-2271
+            uri: direct
+            parameters:
+              name: get-doc-urls
+        - to:
+            id: to-3562
+            uri: direct
+            parameters:
+              name: pdf-to-json
+        - to:
+            id: to-1949
+            uri: direct
+            parameters:
+              name: to-vector-db
+            disabled: false
+        - to:
+            id: to-1056
+            uri: direct
+            parameters:
+              name: insert-customer-db
+- route:
+    id: pdf-to-json
+    from:
+      id: from-3936
+      uri: direct
+      parameters:
+        name: pdf-to-json
+      steps:
+        - setVariable:
+            disabled: true
+            expression:
+              simple:
+                expression: ${body}
+            name: invoice-url
+        - setBody:
+            expression:
+              simple:
+                expression: |-
+                  {
+                    "from_format": [
+                      "pdf"
+                    ],
+                    "to_format": "json",
+                    "ocr": false,
+                    "force_ocr": false,
+                    "table_mode": "fast",
+                    "source": "${variable.invoice-url}"
+                  }
+        - log:
+            id: log-1667
+            message: Calling Docling to covert PDF to JSON...\n${body}
+        - removeHeaders:
+            id: removeHeaders-2869
+            disabled: true
+            pattern: ^(?!CamelAws).*$
+        - setHeader:
+            id: setHeader-3267
+            disabled: true
+            expression:
+              constant:
+                expression: ingest
+            name: CamelAwsS3BucketName
+        - to:
+            id: to-3981
+            uri: https
+            parameters:
+              httpUri: docling-server-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com/process_url
+            disabled: false
+        - log:
+            disabled: true
+            message: ${body}
+- route:
+    id: insert in Vector DB
+    from:
+      id: from-2207
+      uri: direct
+      parameters:
+        name: to-vector-db
+      steps:
+        - setVariable:
+            expression:
+              jq:
+                expression: '.texts[0].text | split(": ") | .[1]'
+                resultType: java.lang.String
+            name: invoice
+        - setVariable:
+            expression:
+              jq:
+                expression: '.texts[7].text | split(": ") | .[1]'
+            name: iban
+        - setVariable:
+            expression:
+              jq:
+                expression: '.texts[12].text | split(": ") | .[1]'
+                resultType: java.lang.String
+            name: taxid
+        - setVariable:
+            expression:
+              jq:
+                expression: |-
+                  .texts[11].text 
+                  | capture("^(?<tokens>[^0-9]+)\\s*\\d") 
+                  | .tokens 
+                  | rtrimstr(" ")
+                resultType: java.lang.String
+            name: name
+        - setVariable:
+            expression:
+              jq:
+                expression: |-
+                  .texts[11].text 
+                  | [match("[a-zA-Z]+"; "g") | .string] 
+                  | (.[0] + "@" + .[0] + "-" + .[1] + ".com")
+                resultType: java.lang.String
+            name: email
+        - log:
+            message: "name: ${variable.name}, email: ${variable.email}"
+        - split:
+            id: split-1561
+            steps:
+              - setBody:
+                  expression:
+                    jq:
+                      expression: .[1].text + "\\n" | sub("\""; "\\\""; "g")
+              - filter:
+                  steps:
+                    - setBody:
+                        id: setBody-1994
+                        expression:
+                          simple: {}
+                  disabled: false
+                  expression:
+                    simple:
+                      expression: ${exchangeProperty.CamelSplitIndex} == 0
+            aggregationStrategy: "#myaggregator"
+            expression:
+              jq:
+                expression: .tables[0].data.grid
+            parallelProcessing: false
+        - to:
+            uri: langchain4j-embeddings:test?embeddingModel=#class:dev.langchain4j.model.embedding.AllMiniLmL6V2EmbeddingModel
+        - setVariable:
+            expression:
+              simple:
+                expression: ${header.CamelLangChain4jEmbeddingsVector}
+                resultType: dev.langchain4j.data.embedding.Embedding
+            name: vector
+        - setHeaders:
+            headers:
+              - expression:
+                  constant:
+                    expression: Bearer root:Milvus
+                name: Authorization
+              - expression:
+                  constant:
+                    expression: application/json
+                name: Content-Type
+        - setBody:
+            id: setBody-8950
+            expression:
+              simple:
+                expression: |-
+                  {
+                      "collectionName": "mycollection",
+                      "data": [{
+                          "iban": "${variable.iban}",
+                          "invoice": ${variable.invoice},
+                          "text": "${body}",
+                          "pdf": "${variable.db-invoice-url}",
+                          "vector": ${variable.vector.vectorAsList()}
+                      }]
+                  }
+        - log:
+            id: log-2245
+            disabled: true
+            message: ${body}
+        - to:
+            id: to-4031
+            uri: https
+            parameters:
+              httpUri: https://milvus-milvus.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com/v2/vectordb/entities/insert
+            disabled: false
+        - log:
+            id: log-1891
+            message: ${body}
+- beans:
+    - name: myaggregator
+      type: org.apache.camel.processor.aggregate.StringAggregationStrategy
+- route:
+    id: get-doc-urls
+    from:
+      id: from-9998
+      uri: direct
+      parameters:
+        name: get-doc-urls
+      steps:
+        - log:
+            id: log-2723
+            message: "File Name: ${header.CamelAwsS3Key}"
+        - to:
+            id: to-2146
+            uri: log
+            parameters:
+              loggerName: InfoLogger
+              showAll: false
+              showBody: false
+              showHeaders: true
+            disabled: true
+        - setHeader:
+            id: setHeader-6679
+            disabled: false
+            expression:
+              simple:
+                expression: "604800"
+            name: CamelMinioPresignedURLExpirationTime
+        - toD:
+            uri: minio
+            parameters:
+              accessKey: minio
+              autoCreateBucket: false
+              bucketName: ingest
+              endpoint: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+              keyName: ${header.CamelAwsS3Key}
+              operation: createDownloadLink
+              secretKey: minio123
+            variableReceive: invoice-url
+        - toD:
+            uri: minio
+            parameters:
+              accessKey: minio
+              autoCreateBucket: false
+              bucketName: invoices
+              endpoint: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+              keyName: ${header.CamelAwsS3Key}
+              operation: createDownloadLink
+              secretKey: minio123
+            variableReceive: db-invoice-url
+        - log:
+            disabled: true
+            message: "expiry time: ${header. CamelMinioPresignedURLExpirationTime}"
+- beans:
+    - name: PostgresqlDataSource
+      properties:
+        databaseName: demo
+        password: camel
+        portNumber: 5432
+        serverName: localhost
+        user: camel
+      type: org.postgresql.ds.PGSimpleDataSource
+- route:
+    id: route-3160
+    description: insert-customer-db
+    from:
+      uri: direct:insert-customer-db
+      steps:
+        - to:
+            uri: sql
+            parameters:
+              query: INSERT INTO CUSTOMERS (taxid, email, name) VALUES (:#${variable.taxid},
+                :#${variable.email}, :#${variable.name})
+        - to:
+            uri: sql
+            parameters:
+              query: INSERT INTO INVOICES (id, taxid) VALUES (:#${variable.invoice}, :#${variable.taxid})
+

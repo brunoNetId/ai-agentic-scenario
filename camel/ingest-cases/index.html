@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        .dashboard-container {
+            max-width: 80%;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .button-container button {
+            margin-right: 10px;
+            padding: 8px 15px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        .approve-button {
+            background-color: #4caf50;
+            color: white;
+        }
+        .discard-button {
+            background-color: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <h1>Admin Dashboard</h1>
+    <table id="eventTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Summary</th>
+                <th>Execution Plan</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script>
+    // WebSocket connection setup
+    const socket = new WebSocket('ws://localhost:8080');
+
+    // Event listener for receiving messages from the server
+    socket.addEventListener('message', (event) => {
+        const data = JSON.parse(event.data);
+        displayEvent(data);
+    });
+
+    function displayEvent(eventData) {
+        const tableBody = document.querySelector('#eventTable tbody');
+        
+        const row = document.createElement('tr');
+
+        // ID cell
+        const idCell = document.createElement('td');
+        idCell.textContent = eventData.id;
+        row.appendChild(idCell);
+
+        // Summary cell
+        const summaryCell = document.createElement('td');
+        summaryCell.textContent = eventData.summary;
+        row.appendChild(summaryCell);
+
+        // Execution Plan cell
+        const executionPlanCell = document.createElement('td');
+        const ul = document.createElement('ul');
+        
+        eventData.executionPlan.forEach(step => {
+            const li = document.createElement('li');
+            li.textContent = step;
+            ul.appendChild(li);
+        });
+        
+        executionPlanCell.appendChild(ul);
+        row.appendChild(executionPlanCell);
+
+        // Action cell
+        const actionCell = document.createElement('td');
+        const approveButton = document.createElement('button');
+        approveButton.classList.add('approve-button');
+        approveButton.textContent = 'Approve';
+        approveButton.onclick = () => handleAction(row, eventData.id, 'approved');
+
+        const discardButton = document.createElement('button');
+        discardButton.classList.add('discard-button');
+        discardButton.textContent = 'Discard';
+        discardButton.onclick = () => handleAction(row, eventData.id, 'discarded');
+
+        actionCell.appendChild(approveButton);
+        actionCell.appendChild(discardButton);
+        row.appendChild(actionCell);
+
+        // Append the new row to the table body
+        tableBody.appendChild(row);
+    }
+
+    function handleAction(row, id, action) {
+        const data = { id: id, action: action };
+        socket.send(JSON.stringify(data));
+        setTimeout(() => row.remove(), 500); // Smoothly remove the row after sending
+    }
+</script>
+
+</body>
+</html>

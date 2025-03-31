@@ -1,0 +1,101 @@
+- route:
+    id: search invoices
+    from:
+      id: from-2899
+      uri: langchain4j-tools
+      parameters:
+        description: Get list of invoices for purchases of a type of product
+        parameter.productType: String
+        tags: all
+        toolId: query
+      steps:
+        - setBody:
+            expression:
+              simple:
+                expression: ${header.productType}
+                resultType: java.lang.String
+        - removeHeaders:
+            id: removeHeaders-1052
+            pattern: "*"
+        - to:
+            id: to-3647
+            uri: langchain4j-embeddings
+            parameters:
+              embeddingId: products
+              embeddingModel: "#class:dev.langchain4j.model.embedding.AllMiniLmL6V2EmbeddingM\
+                odel"
+        - setVariable:
+            id: setVariable-2793
+            expression:
+              simple:
+                expression: ${header.CamelLangChain4jEmbeddingsVector}
+                resultType: dev.langchain4j.data.embedding.Embedding
+            name: search
+        - setBody:
+            id: setBody-3859
+            expression:
+              simple:
+                expression: |-
+                  {
+                      "collectionName": "mycollection",
+                      "outputFields": ["invoice"],
+                      "data": [
+                          ${variable.search.vectorAsList()}
+                      ],
+                      "annsField": "vector",
+                      "limit": 5,
+                      "searchParams": {
+                          "params": {
+                              "radius": 0.40
+                          }
+                      }
+                  }
+        - setHeaders:
+            id: setHeaders-2064
+            headers:
+              - expression:
+                  constant:
+                    expression: application/json
+                name: Content-Type
+              - expression:
+                  constant:
+                    expression: Bearer root:Milvus
+                name: Authorization
+        - to:
+            id: to-2928
+            uri: https
+            parameters:
+              httpUri: milvus-milvus.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com/v2/vectordb/entities/search
+            disabled: false
+        - log: ${body}
+        - choice:
+            id: choice-3858
+            otherwise:
+              id: otherwise-2447
+              steps:
+                - setBody:
+                    id: setBody-7358
+                    expression:
+                      simple:
+                        expression: nothing found
+            when:
+              - id: when-2541
+                steps:
+                  - setBody:
+                      id: setBody-2852
+                      expression:
+                        jq:
+                          expression: .data[].invoice
+                expression:
+                  jq:
+                    expression: .data | length > 0
+        - setBody:
+            id: setBody-1147
+            disabled: true
+            expression:
+              jq:
+                expression: .data[].invoice
+                resultType: java.lang.String
+        - log:
+            id: log-3317
+            message: ${body}

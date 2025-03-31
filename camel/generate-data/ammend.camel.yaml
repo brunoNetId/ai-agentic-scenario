@@ -1,0 +1,184 @@
+- route:
+    id: ingestor
+    from:
+      uri: aws2-s3
+      parameters:
+        accessKey: minio
+        bucketNameOrArn: ingest
+        destinationBucket: generated
+        forcePathStyle: true
+        moveAfterRead: false
+        overrideEndpoint: true
+        region: ap-south-2
+        secretKey: minio123
+        uriEndpointOverride: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+      steps:
+        - setVariable:
+            id: setVariable-4203
+            expression:
+              simple:
+                expression: ${header.CamelAwsS3Key}
+            name: filename
+        - to:
+            id: to-2271
+            uri: direct
+            parameters:
+              name: get-doc-urls
+        - to:
+            id: to-3562
+            uri: direct
+            parameters:
+              name: pdf-to-markdown
+        - to:
+            id: to-9285
+            uri: direct
+            parameters:
+              name: generate
+            disabled: false
+- route:
+    id: pdf-to-markdown
+    from:
+      id: from-3936
+      uri: direct
+      parameters:
+        name: pdf-to-markdown
+      steps:
+        - setBody:
+            expression:
+              simple:
+                expression: |-
+                  {
+                    "from_format": [
+                      "pdf"
+                    ],
+                    "to_format": "md",
+                    "ocr": false,
+                    "force_ocr": false,
+                    "table_mode": "fast",
+                    "source": "${variable.invoice-url}"
+                  }
+        - log:
+            id: log-1667
+            message: Calling Docling to covert PDF to JSON...\n${body}
+        - to:
+            id: to-3981
+            uri: https
+            parameters:
+              httpUri: docling-server-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com/process_url
+            disabled: false
+        - log:
+            disabled: false
+            message: ${body}
+- beans:
+    - name: myaggregator
+      type: org.apache.camel.processor.aggregate.StringAggregationStrategy
+- route:
+    id: get-doc-urls
+    from:
+      id: from-9998
+      uri: direct
+      parameters:
+        name: get-doc-urls
+      steps:
+        - log:
+            id: log-2723
+            message: "File Name: ${header.CamelAwsS3Key}"
+        - to:
+            id: to-2146
+            uri: log
+            parameters:
+              loggerName: InfoLogger
+              showAll: false
+              showBody: false
+              showHeaders: true
+            disabled: true
+        - toD:
+            uri: minio
+            parameters:
+              accessKey: minio
+              autoCreateBucket: false
+              bucketName: ingest
+              endpoint: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+              keyName: ${header.CamelAwsS3Key}
+              operation: createDownloadLink
+              secretKey: minio123
+            variableReceive: invoice-url
+        - toD:
+            uri: minio
+            parameters:
+              accessKey: minio
+              autoCreateBucket: false
+              bucketName: generated
+              endpoint: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+              keyName: ${header.CamelAwsS3Key}
+              operation: createDownloadLink
+              secretKey: minio123
+            variableReceive: db-invoice-url
+        - log:
+            disabled: true
+            message: ${body}
+- route:
+    id: generate
+    from:
+      id: from-4275
+      uri: direct
+      parameters:
+        name: generate
+      steps:
+        - process:
+            id: process-3490
+            ref: ammendInvoice
+        - to:
+            uri: langchain4j-chat
+            parameters:
+              chatId: sim
+              chatOperation: CHAT_MULTIPLE_MESSAGES
+        - setBody:
+            id: setBody-2183
+            disabled: true
+            expression:
+              simple:
+                expression: ${variable.conversation}
+        - process:
+            id: process-3957
+            disabled: true
+            ref: createSummary
+        - to:
+            uri: langchain4j-chat
+            parameters:
+              chatId: summary
+              chatOperation: CHAT_MULTIPLE_MESSAGES
+            disabled: true
+            variableReceive: summary
+        - log:
+            id: log-5080
+            message: ${body}
+        - process:
+            disabled: false
+            ref: MarkdownToPDF
+        - to:
+            uri: file
+            parameters:
+              directoryName: pdf
+              fileName: html-invoice.pdf
+            disabled: false
+        - toD:
+            uri: minio
+            parameters:
+              accessKey: minio
+              bucketName: generated
+              endpoint: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+              keyName: ${variable.filename}.txt
+              secretKey: minio123
+            disabled: true
+            variableSend: conversation
+        - toD:
+            uri: minio
+            parameters:
+              accessKey: minio
+              bucketName: generated
+              endpoint: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+              keyName: ${variable.filename}summary.txt
+              secretKey: minio123
+            disabled: true
+            variableSend: summary

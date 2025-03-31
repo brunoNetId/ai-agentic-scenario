@@ -1,0 +1,16 @@
+# role
+become_override: no
+ocp_username: "{{ocp4_workload_authentication_admin_user|default('opentlc-mgr',true)}}"
+silent: false
+
+openshift_version: "{{ ocp_version }}"
+subscription_versions_for_ocp:
+  "4.10":
+    odf: 
+      channel: "stable-4.10"
+  "4.11":
+    odf: 
+      channel: "stable-4.11"
+  "4.12":
+    odf: 
+      channel: "stable-4.12"

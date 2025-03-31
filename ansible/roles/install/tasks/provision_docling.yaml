@@ -1,0 +1,43 @@
+- name:  ({{ s3_namespace }}) Evaluate namespace if not exists
+  k8s:
+    api_version: v1
+    kind: Namespace
+    name:  "{{ s3_namespace }}"
+    state: present
+
+- name: Deploy S3 Storage
+  k8s:
+    namespace: "{{ s3_namespace }}"
+    state: present
+    resource_definition: "{{ lookup('template', 's3-storage.yaml.j2') }}"
+
+- name: Wait until Minio is active
+  k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: "{{ s3_namespace }}"
+    name: minio
+  register: r_minio
+  retries: 30
+  delay: 10
+  until:
+   - r_minio.resources is defined
+   - r_minio.resources | length | int > 0
+   - r_minio.resources[0].status is defined
+   - (r_minio.resources[0].status.conditions | selectattr('type','equalto','Available') | list | first).status == "True"
+
+- name: ({{ s3_namespace }}) Create INGEST bucket
+  amazon.aws.s3_bucket:
+    endpoint_url: "https://minio-api-{{ s3_namespace }}.{{ route_subdomain }}"
+    aws_access_key: "minio"
+    aws_secret_key: "minio123"
+    name: "ingest"
+    state: present
+
+- name: ({{ s3_namespace }}) Create INVOICES bucket
+  amazon.aws.s3_bucket:
+    endpoint_url: "https://minio-api-{{ s3_namespace }}.{{ route_subdomain }}"
+    aws_access_key: "minio"
+    aws_secret_key: "minio123"
+    name: "invoices"
+    state: present

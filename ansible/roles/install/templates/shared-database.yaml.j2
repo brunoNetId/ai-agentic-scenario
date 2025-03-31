@@ -1,0 +1,118 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgresql
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 1Gi
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: postgresql
+data:
+  database-name: c2FtcGxlZGI=
+  database-password: YWRtaW4=
+  database-user: YWRtaW4=
+type: Opaque
+---
+kind: DeploymentConfig
+apiVersion: apps.openshift.io/v1
+metadata:
+  name: postgresql
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  test: false
+  selector:
+    name: postgresql
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        name: postgresql
+    spec:
+      volumes:
+        - name: postgresql-data
+          persistentVolumeClaim:
+            claimName: postgresql
+      containers:
+        - resources:
+            limits:
+              memory: 512Mi
+          readinessProbe:
+            exec:
+              command:
+                - /usr/libexec/check-container
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          name: postgresql
+          livenessProbe:
+            exec:
+              command:
+                - /usr/libexec/check-container
+                - '--live'
+            initialDelaySeconds: 120
+            timeoutSeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          env:
+            - name: POSTGRESQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: database-user
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: database-password
+            - name: POSTGRESQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: postgresql
+                  key: database-name
+          securityContext:
+            capabilities: {}
+            privileged: false
+          ports:
+            - containerPort: 5432
+              protocol: TCP
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: postgresql-data
+              mountPath: /var/lib/pgsql/data
+          terminationMessagePolicy: File
+          image: >-
+            image-registry.openshift-image-registry.svc:5000/openshift/postgresql@sha256:ed2da0eed3f495f5455f490cdf7f7943420f64b0cf541271a2d315a3f9e9744c
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql
+spec:
+  ports:
+    - name: postgresql
+      protocol: TCP
+      port: 5432
+      targetPort: 5432
+  type: ClusterIP
+  selector:
+    name: postgresql
+

@@ -1,0 +1,32 @@
+NS_DEMO=demo
+MILVUS="https://milvus-milvus.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com"
+TOKEN="root:Milvus"
+
+
+DBPOD=`oc get pod --selector=name=postgresql -o name -n $NS_DEMO`
+# echo $DBPOD
+
+
+DB_DELETE_CUSTOMERS="oc exec svc/postgresql -n $NS_DEMO -- psql -d demo -c 'delete from customers;'"
+DB_DELETE_INVOICES="oc exec svc/postgresql -n $NS_DEMO -- psql -d demo -c 'delete from invoices;'"
+DB_DELETE_PROMOTIONS="oc exec svc/postgresql -n $NS_DEMO -- psql -d demo -c 'delete from promotions;'"
+DB_DELETE_AWARDS="oc exec svc/postgresql -n $NS_DEMO -- psql -d demo -c 'delete from awards;'"
+
+MILVUS_DELETE_ALL=$(cat << 'EOF'
+	curl --request POST \
+	--url "${MILVUS}/v2/vectordb/entities/delete" \
+	--header "Authorization: Bearer ${TOKEN}" \
+	--header "Content-Type: application/json" \
+	-d '{
+	    "collectionName": "mycollection",
+    	"filter": "invoice >= 0"
+	}'
+EOF
+)
+
+eval "$DB_DELETE_CUSTOMERS"
+eval "$DB_DELETE_INVOICES"
+# eval "$DB_DELETE_PROMOTIONS"
+eval "$DB_DELETE_AWARDS"
+
+eval "$MILVUS_SEARCH"

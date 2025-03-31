@@ -1,0 +1,318 @@
+- route:
+    id: pdf invoice tool
+    from:
+      uri: langchain4j-tools
+      parameters:
+        description: get HTML link to PDF document for given invoice identifier
+        parameter.invoiceid: string
+        tags: all
+        toolId: get-invoice-url
+      steps:
+        - setVariable:
+            id: setVariable-3128
+            description: set invoiceid
+            expression:
+              simple:
+                expression: ${header.invoiceid}
+            name: invoiceid
+        - to:
+            id: to-1416
+            uri: direct
+            parameters:
+              name: get-invoice-url
+        - log:
+            message: ${body}
+- route:
+    id: ammend invoice tool
+    from:
+      uri: langchain4j-tools
+      parameters:
+        description: ammend invoice with given instructions
+        parameter.invoiceid: string
+        parameter.message: string
+        tags: all
+        toolId: ammend-invoice
+      steps:
+        - setVariable:
+            id: setVariable-1488
+            description: set invoiceid
+            expression:
+              simple:
+                expression: ${header.invoiceid}
+            name: invoiceid
+        - setVariable:
+            id: setVariable-4134
+            description: set ammendment
+            expression:
+              simple:
+                expression: ${header.message}
+            name: ammendment
+        - setVariable:
+            id: setVariable-5489
+            description: set output fields
+            expression:
+              constant:
+                expression: '["invoice","vector","text","iban","pdf"]'
+            name: outputFields
+        - to:
+            uri: direct
+            parameters:
+              name: call-milvus-get
+        - setVariable:
+            id: setVariable-1158
+            expression:
+              jq:
+                expression: .data[].pdf
+            name: invoice-url
+        - to:
+            id: to-3568
+            uri: direct
+            parameters:
+              name: pdf-to-markdown
+        - to:
+            id: to-1038
+            uri: direct
+            parameters:
+              name: ammend
+        - setBody:
+            id: setBody-1498
+            expression:
+              simple:
+                expression: done
+        - log:
+            message: ${body}
+- route:
+    id: get-invoice-url
+    from:
+      id: get-invoice-url
+      uri: direct
+      parameters:
+        name: get-invoice-url
+      steps:
+        - setVariable:
+            id: setVariable-2691
+            expression:
+              constant:
+                expression: '["pdf"]'
+            name: outputFields
+        - to:
+            uri: direct
+            parameters:
+              name: call-milvus-get
+        - setBody:
+            id: setBody-5908
+            expression:
+              jq:
+                expression: .data[].pdf
+        - choice:
+            id: choice-3962
+            when:
+              - id: when-3443
+                steps:
+                  - setBody:
+                      id: setBody-8183
+                      expression:
+                        simple:
+                          expression: does not exist
+                expression:
+                  simple:
+                    expression: ${body} == null
+        - setVariable:
+            id: setVariable-2621
+            expression:
+              simple:
+                expression: ${body}
+            name: invoice-url
+        - log:
+            id: log-1868
+            message: ${body}
+- route:
+    id: call-milvus-get
+    from:
+      id: call-milvus-get
+      uri: direct
+      parameters:
+        name: call-milvus-get
+      steps:
+        - setBody:
+            expression:
+              simple:
+                expression: |-
+                  {
+                      "collectionName": "mycollection",
+                      "id":[${variable.invoiceid}],
+                      "outputFields": ${variable.outputFields}
+                  }
+        - removeHeaders:
+            pattern: "*"
+        - setHeaders:
+            headers:
+              - expression:
+                  constant:
+                    expression: application/json
+                name: Content-Type
+              - expression:
+                  constant:
+                    expression: Bearer root:Milvus
+                name: Authorization
+        - log:
+            message: ${body}
+        - to:
+            uri: https
+            parameters:
+              httpUri: milvus-milvus.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com/v2/vectordb/entities/get
+            disabled: false
+        - setVariable:
+            expression:
+              simple:
+                expression: ${body}
+            name: milvus-data
+        - log:
+            message: "Milvus response: ${body}"
+- route:
+    id: call-milvus-update
+    from:
+      id: call-milvus-update
+      uri: direct
+      parameters:
+        name: call-milvus-update
+      steps:
+        - setVariable:
+            id: setVariable-3126
+            description: set text field
+            expression:
+              jq:
+                expression: .data[].text | sub("\""; "\\\""; "g") | sub("\n"; "\\n"; "g")
+                source: variable:milvus-data
+            name: milvus-text
+        - setHeaders:
+            headers:
+              - expression:
+                  constant:
+                    expression: Bearer root:Milvus
+                name: Authorization
+              - expression:
+                  constant:
+                    expression: application/json
+                name: Content-Type
+        - setBody:
+            expression:
+              simple:
+                expression: >-
+                  {
+                      "collectionName": "mycollection",
+                      "data": [{
+                          "iban": "${jq(variable:milvus-data,.data[].iban)}",
+                          "invoice": "${jq(variable:milvus-data,.data[].invoice)}",
+                          "text": "${variable.milvus-text}",
+                          "pdf": "${variable.new-pdf-link}",
+                          "vector": "${jq(variable:milvus-data,.data[].vector)}"
+                      }]
+                  }
+        - log:
+            disabled: false
+            message: ${body}
+        - to:
+            uri: https
+            parameters:
+              httpUri: https://milvus-milvus.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com/v2/vectordb/entities/upsert
+            disabled: false
+        - log:
+            message: "Milvus update: ${body}"
+- route:
+    id: pdf-to-markdown
+    from:
+      uri: direct
+      parameters:
+        name: pdf-to-markdown
+      steps:
+        - setBody:
+            expression:
+              simple:
+                expression: |-
+                  {
+                    "from_format": [
+                      "pdf"
+                    ],
+                    "to_format": "md",
+                    "ocr": false,
+                    "force_ocr": false,
+                    "table_mode": "fast",
+                    "source": "${variable.invoice-url}"
+                  }
+        - log:
+            message: Calling Docling to covert PDF to JSON...\n${body}
+        - to:
+            uri: https
+            parameters:
+              httpUri: docling-server-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com/process_url
+            disabled: false
+        - log:
+            disabled: false
+            message: ${body}
+- route:
+    id: ammend
+    from:
+      uri: direct
+      parameters:
+        name: ammend
+      steps:
+        - setBody:
+            id: setBody-4268
+            expression:
+              simple:
+                expression: ${variable.ammendment}\n\n${body}
+        - process:
+            ref: ammendInvoice
+        - to:
+            uri: langchain4j-chat
+            parameters:
+              chatId: sim
+              chatModel: "#chatModelAmmend"
+              chatOperation: CHAT_MULTIPLE_MESSAGES
+        - log:
+            message: ${body}
+        - process:
+            ref: MarkdownToPDF
+        - setVariable:
+            expression:
+              simple:
+                expression: ${jq(variable:milvus-data, .data[].pdf |
+                  match("https?://[^/]+/.*/([^/?]+)") | .captures[0].string)}
+            name: filename
+        - log:
+            id: log-5738
+            message: "file key: ${variable.filename}"
+        - setHeader:
+            expression:
+              simple:
+                expression: application/pdf
+            name: CamelAwsS3ContentType
+        - to:
+            uri: aws2-s3
+            parameters:
+              accessKey: minio
+              bucketNameOrArn: invoices
+              forcePathStyle: true
+              keyName: ${variable.filename}
+              overrideEndpoint: true
+              region: ap-south-2
+              secretKey: minio123
+              uriEndpointOverride: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+        - toD:
+            uri: minio
+            parameters:
+              accessKey: minio
+              autoCreateBucket: false
+              bucketName: invoices
+              endpoint: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+              keyName: ${variable.filename}
+              operation: createDownloadLink
+              secretKey: minio123
+            variableReceive: new-pdf-link
+        - to:
+            id: to-1422
+            uri: direct
+            parameters:
+              name: call-milvus-update
+            disabled: false

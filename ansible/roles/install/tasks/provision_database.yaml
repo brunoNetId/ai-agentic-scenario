@@ -1,0 +1,36 @@
+- name: Evaluate Database namespace if not exists
+  k8s:
+    api_version: v1
+    kind: Namespace
+    name:  "{{ demo_namespace }}"
+    state: present
+
+- name: Provision Database
+  k8s:
+    state: present
+    namespace: "{{ demo_namespace }}"
+    resource_definition: "{{ lookup('template', 'shared-database.yaml.j2') }}"
+
+- name: "Wait until Database Deployment is active"
+  k8s_info:
+    api_version: apps.openshift.io/v1
+    kind: DeploymentConfig
+    namespace:  "{{ demo_namespace }}"
+    name: postgresql
+  register: db
+  retries: 30
+  delay: 10
+  until:
+   - db.resources[0].status.readyReplicas is defined
+   - db.resources[0].status.readyReplicas == 1
+
+- name: Deploy SQL script
+  shell: 
+    cmd: >
+      oc rsync ../deploy/db `oc get pod --selector=name=postgresql -o name -n {{ demo_namespace }}`:/tmp
+
+- name: Run SQL script
+  shell: 
+    cmd: >
+      oc exec svc/postgresql -n {{ demo_namespace }} -- psql -f /tmp/db/create.sql
+

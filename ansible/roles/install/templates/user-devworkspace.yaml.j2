@@ -1,0 +1,90 @@
+{% for __user in users %}
+---
+apiVersion: workspace.devfile.io/v1alpha2
+kind: DevWorkspace
+metadata:
+  name: llm-lab
+  namespace: '{{ "user-devspaces" | replace("user", __user) }}'
+spec:
+  contributions:
+    - name: ide
+      uri: http://devspaces-dashboard.che.svc.cluster.local:8080/dashboard/api/editors/devfile?che-editor=che-incubator/che-code/latest
+  routingClass: che
+  started: true
+  template:
+    attributes:
+      controller.devfile.io/storage-type: per-workspace
+    commands:
+      - exec:
+          commandLine: source ~/.bashrc && jbang version --update && jbang cache clear && jbang app uninstall camel && jbang app install camel@apache/camel
+          component: tools
+        id: set-camel-cli
+      - exec:
+          commandLine: 'echo -e "export LAB_SCRIPTS=/projects/llm-basics/camel/tools/scripts\nexport PATH=\$LAB_SCRIPTS:\$PATH\nsource setup" >> ~/.bashrc'
+          component: tools
+        id: setup-lab-default
+    components:
+      - container:
+          endpoints:
+            - exposure: public
+              name: 8080-tcp
+              protocol: https
+              secure: true
+              targetPort: 8080
+          env:
+            - name: MAVEN_CONFIG
+              value: ''
+            - name: JAVA_OPTS
+              value: '-XX:MaxRAMPercentage=50.0 -XX:+UseParallelGC -XX:MinHeapFreeRatio=10 -XX:MaxHeapFreeRatio=20 -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xms20m -Djava.security.egd=file:/dev/./urandom -Duser.home=/home/user'
+            - name: MAVEN_OPTS
+              value: $(JAVA_OPTS)
+          image: 'quay.io/redhatintegration/rhi-tools:devspaces'
+          memoryLimit: 3Gi
+          sourceMapping: /projects
+          volumeMounts:
+            - name: m2
+              path: /home/user/.m2
+        name: tools
+      - container:
+          endpoints:
+            - exposure: public
+              name: tutorial
+              protocol: https
+              secure: true
+              targetPort: 5001
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: THREESCALE_WILDCARD_DOMAIN
+              value: local.localdomain
+            - name: OPENSHIFT_VERSION
+              value: '4'
+            - name: PORT
+              value: '5001'
+            - name: WALKTHROUGH_LOCATIONS
+              # value: 'https://github.com/RedHat-Middleware-Workshops/devsandbox-category-llm-basics?walkthroughsFolder=/docs/labs'
+              value: 'https://github.com/brunoNetId/workshop-camel-llm-tools?walkthroughsFolder=/docs/labs'
+          image: 'quay.io/redhatintegration/tutorial-web-app:latest'
+          memoryLimit: 512Mi
+          mountSources: true
+          sourceMapping: /projects
+          volumeMounts:
+            - name: tutorial-storage
+              path: /opt/user-walkthroughs
+        name: webapp-all
+      - name: m2
+        volume:
+          size: 2Gi
+      - name: tutorial-storage
+        volume:
+          size: 256Mi
+    events:
+      postStart:
+        - set-camel-cli
+        - setup-lab-default
+    projects:
+      - git:
+          remotes:
+            origin: 'https://github.com/RedHat-Middleware-Workshops/devsandbox-category-llm-basics.git'
+        name: llm-basics  
+{% endfor %}

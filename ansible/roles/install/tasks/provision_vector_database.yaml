@@ -1,0 +1,55 @@
+- name: Evaluate Milvus Vector Database namespace if not exists
+  k8s:
+    api_version: v1
+    kind: Namespace
+    name: milvus
+    state: present
+
+- name: Provision Vector Database
+  k8s:
+    state: present
+    resource_definition: "{{ lookup('template', 'vector-database.yaml.j2') }}"
+
+- name: Provision Vector Database UI
+  k8s:
+    state: present
+    resource_definition: "{{ lookup('template', 'vector-database-ui.yaml.j2') }}"
+
+
+- name: "Wait until Vector Database Deployment is active"
+  k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    namespace: milvus
+    name: vectordb-milvus-standalone
+  register: vdb
+  retries: 30
+  delay: 10
+  until:
+   - vdb.resources[0].status.readyReplicas is defined
+   - vdb.resources[0].status.readyReplicas == 1
+
+
+# You can use shell to run other executables to perform actions inline
+- name: Create Collection
+  ansible.builtin.shell: |
+    export schema=$(cat ../deploy/milvus/schema.json)
+    export CLUSTER_ENDPOINT="http://localhost:19530"
+    export TOKEN="root:Milvus"
+
+    oc exec -it svc/vectordb-milvus -n milvus  -- \
+    curl --request POST \
+    --url "${CLUSTER_ENDPOINT}/v2/vectordb/collections/create" \
+    --header "Authorization: Bearer ${TOKEN}" \
+    --header "Content-Type: application/json" \
+    -d "$schema"
+
+
+  args:
+    executable: /bin/bash
+  register: create_collection
+
+- name: Print create_collection
+  debug:
+    msg: "output of ls: {{ create_collection.stdout }}"
+

@@ -1,0 +1,55 @@
+{
+    "collectionName": "mycollection",
+    "schema": {
+            "autoId": false,
+            "enabledDynamicField": false,
+            "fields": [
+                {
+                    "fieldName": "invoice",
+                    "dataType": "Int64",
+                    "isPrimary": true
+                },
+                {
+                    "fieldName": "vector",
+                    "dataType": "FloatVector",
+                    "elementTypeParams": {
+                        "dim": "384"
+                    }
+                },
+                {
+                    "fieldName": "text",
+                    "dataType": "VarChar",
+                    "elementTypeParams": {
+                        "max_length": 1024
+                    }
+                },
+                {
+                    "fieldName": "iban",
+                    "dataType": "VarChar",
+                    "elementTypeParams": {
+                        "max_length": 32
+                    }
+                },
+                {
+                    "fieldName": "pdf",
+                    "dataType": "VarChar",
+                    "elementTypeParams": {
+                        "max_length": 512
+                    }
+                }
+            ]
+        },
+    "indexParams": [
+            {
+                "fieldName": "vector",
+                "metricType": "COSINE",
+                "indexName": "vector",
+                "indexType": "AUTOINDEX"
+            },
+            {
+                "fieldName": "invoice",
+                "indexName": "invoice",
+                "indexType": "STL_SORT"
+            }
+        ]
+}

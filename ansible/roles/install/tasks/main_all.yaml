@@ -1,0 +1,31 @@
+
+# - name: Provision OpenShift Dev Spaces
+#   include_tasks: provision_devspaces.yaml
+#   vars:
+#     operators_project: "workshop-operators"
+#     snapshot_operator_project: "openshift-marketplace"
+#     che_project: "che"
+
+
+# - name: Provision users workload
+#   ansible.builtin.include_tasks: provision_users_workload.yaml
+
+
+
+
+
+- name: Provision Vector Database
+  include_tasks: provision_vector_database.yaml
+
+- name: Provision Demo artifacts
+  include_tasks: provision_demo.yaml
+  vars:
+    demo_namespace: demo
+
+- name: Provision Database
+  include_tasks: provision_database.yaml
+  vars:
+    demo_namespace: demo
+
+- name: Provision filestash S3 viewer
+  include_tasks: provision_filestash.yaml
