@@ -3,6 +3,27 @@
     from:
       uri: platform-http:/camel/chat
       steps:
+        - choice:
+            id: choice-2849
+            otherwise:
+              id: otherwise-2610
+              steps:
+                - setVariable:
+                    description: last is true
+                    constant: "true"
+                    name: global:last
+            when:
+              - id: when-1769
+                steps:
+                  - setVariable:
+                      description: set last flag
+                      expression:
+                        simple:
+                          expression: ${header.lasttask}
+                      name: global:last
+                expression:
+                  simple:
+                    expression: ${header.ai-agent} == "planner"
         - process:
             description: AI message
             ref: createChatMessage
@@ -13,11 +34,15 @@
               chatModel: "#chatModelMain"
               tags: all
               toolId: myllm
-        - setHeader:
-            id: setHeader-3277
-            expression:
-              simple:
-                expression: " no-cache"
-            name: Cache-Control
+        - removeHeaders:
+            id: removeHeaders-4023
+            pattern: "*"
         - log:
             message: ${body}
+        - to:
+            id: to-8316
+            uri: log
+            parameters:
+              loggerName: debug
+              showAll: false
+              showHeaders: true

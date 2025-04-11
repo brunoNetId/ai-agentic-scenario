@@ -22,6 +22,9 @@
               name: get-invoice-url
         - log:
             message: ${body}
+        - bean:
+            method: "log(invoice url for: ${variable.invoiceid})"
+            ref: logger
 - route:
     id: amend invoice tool
     from:
@@ -78,9 +81,12 @@
             id: setBody-1498
             expression:
               simple:
-                expression: '{"status":"done"}'
+                expression: done
         - log:
             message: ${body}
+        - bean:
+            method: "log(ammend invoice: ${variable.invoiceid})"
+            ref: logger
 - route:
     id: get-invoice-url
     from:
@@ -113,7 +119,7 @@
                       id: setBody-8183
                       expression:
                         simple:
-                          expression: '{"status":"does not exist"}'
+                          expression: does not exist
                 expression:
                   simple:
                     expression: ${body} == null

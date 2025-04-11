@@ -1,0 +1,419 @@
+- route:
+    id: route-8511
+    from:
+      id: from-9460
+      uri: netty-http
+      parameters:
+        bridgeEndpoint: true
+        host: localhost:11400
+        matchOnUriPrefix: true
+        protocol: http
+      steps:
+        - convertBodyTo:
+            id: convertBodyTo-3467
+            type: String
+        - setVariable:
+            id: setVariable-2686
+            description: capture call
+            expression:
+              simple:
+                expression: ${body}
+            name: toolcalls
+        - log:
+            disabled: true
+            message: "got LLM request: ${body}"
+        - to:
+            id: to-2165
+            uri: netty-http
+            parameters:
+              host: localhost:11434
+              protocol: http
+        - convertBodyTo:
+            id: convertBodyTo-3614
+            type: String
+        - choice:
+            id: choice-9760
+            when:
+              - id: when-2735
+                steps:
+                  - log:
+                      id: log-4282
+                      disabled: true
+                      message: "final tool call summary: ${variable.toolcalls}"
+                  - wireTap:
+                      uri: direct:generate-mermaid
+                      variableSend: toolcalls
+                expression:
+                  jq:
+                    expression: .choices[].finish_reason == "stop"
+        - setBody:
+            id: setBody-3557
+            disabled: true
+            expression:
+              jq:
+                expression: "."
+        - wireTap:
+            id: wireTap-1720
+            disabled: true
+            dynamicUri: false
+        - log:
+            id: log-2788
+            disabled: true
+            message: "got LLM response: ${body}"
+- route:
+    id: route-1823
+    from:
+      uri: direct
+      parameters:
+        name: generate-mermaid
+      steps:
+        - convertBodyTo:
+            id: convertBodyTo-2320
+            disabled: true
+            type: String
+        - transform:
+            disabled: false
+            expression:
+              jq:
+                expression: .messages[1:]
+        - log:
+            id: log-3690
+            disabled: false
+            message: "Aggregating result. last: ${variable.global:last}. This round:
+              ${body}"
+        - aggregate:
+            steps:
+              - log:
+                  message: "aggregation completed: ${body}"
+              - setProperty:
+                  expression:
+                    simple:
+                      expression: ${body}
+                  name: thebody
+              - setVariable:
+                  expression:
+                    simple:
+                      expression: "[]"
+                  name: global:alltools
+              - split:
+                  steps:
+                    - log:
+                        message: "split: ${body}, alltools: ${variable.global:alltools}"
+                    - setProperty:
+                        id: setProperty-7007
+                        disabled: true
+                        expression:
+                          jq:
+                            expression: "."
+                        name: thebody
+                    - setProperty:
+                        disabled: false
+                        expression:
+                          simple:
+                            expression: ${body}
+                        name: thebody
+                    - setBody:
+                        expression:
+                          simple:
+                            expression: ${variable.global:alltools}
+                    - setVariable:
+                        expression:
+                          jq:
+                            expression: '. + [{"step": property("CamelSplitIndex"),"content":
+                              property("thebody") | fromjson  }]'
+                        name: global:alltools
+                  expression:
+                    simple:
+                      expression: ${body}
+              - log:
+                  message: ${variables.global:alltools}
+              - setBody:
+                  expression:
+                    simple:
+                      expression: ${variable.global:alltools}
+              - setBody:
+                  expression:
+                    jq:
+                      expression: >-
+                        map(
+                            . as $step | {
+                                "step": $step.step,
+                                "execution": {
+                                    "user_request": ($step.content[] | select(.role == "user") | .content |= (split("\n") | .[0])),
+                                    "tool_calls": (
+                                        [$step.content[] | select(.role == "assistant" and .tool_calls) | {
+                                            "group": [
+                                                .tool_calls[] | . as $call | {
+                                                    "tool": {
+                                                        "name": (
+                                                            .function.name + "_" + .id + ": " + (.function.arguments | fromjson | [leaf_paths as $path | "\($path | join(".")): \(getpath($path))"] | join(", "))
+                                                        ),
+                                                    "response": (
+
+                                                        $step.content[] | select(.role == "tool") | .content | try(fromjson | [leaf_paths as $path | "\($path | join(".")): \(getpath($path))"] | join(", ")) catch "not json"
+                                                    )
+                                                    }
+                                                }
+                                            ]
+                                        }]
+                                    )
+                                }
+                            }
+                        )
+              - log:
+                  id: log-2928
+                  message: "Mermaid input: ${body}"
+              - process:
+                  ref: composeGraph
+              - to:
+                  uri: langchain4j-chat
+                  parameters:
+                    chatId: graph
+                    chatModel: "#chatModelGraphs"
+                    chatOperation: CHAT_MULTIPLE_MESSAGES
+              - log:
+                  message: |-
+                    graph:
+                    ${body}
+            aggregationStrategy: "#class:org.apache.camel.processor.aggregate.GroupedBodyAg\
+              gregationStrategy"
+            completionPredicate:
+              simple:
+                expression: ${variable.global:last} == true
+            correlationExpression:
+              constant:
+                expression: "true"
+            eagerCheckCompletion: true
+- route:
+    id: route-3392
+    from:
+      id: from-3199
+      uri: timer
+      parameters:
+        period: "1000"
+        repeatCount: "1"
+        timerName: template
+      steps:
+        - stop:
+            id: stop-1800
+        - setBody:
+            id: setBody-2418
+            expression:
+              simple:
+                expression: >-
+                  [
+                    {
+                      "step": "0",
+                      "content": [
+                        {
+                          "role": "user",
+                          "content": "Amend invoice 67095041 with the correct tax rate of 15%"
+                        },
+                        {
+                          "role": "assistant",
+                          "content": null,
+                          "tool_calls": [
+                            {
+                              "id": "call_ywwktz01",
+                              "type": "function",
+                              "function": {
+                                "name": "amendInvoiceWithGivenInstructions",
+                                "arguments": "{\"invoiceid\":\"67095041\",\"message\":\"Corrected tax rate to 15%\"}"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "role": "tool",
+                          "tool_call_id": "call_ywwktz01",
+                          "content": "{\"status\":\"done\"}"
+                        }
+                      ]
+                    },
+                    {
+                      "step": "1",
+                      "content": [
+                        {
+                          "role": "user",
+                          "content": "Get active promotions\n\ninputs:\n[ {\n  \"id\" : \"0\",\n  \"request\" : \"Amend invoice 67095041 with the correct tax rate of 15%\",\n  \"inputs\" : null,\n  \"result\" : \"Amendment complete. Tax rate for invoice 67095041 has been corrected to 15%.\"\n} ]"
+                        },
+                        {
+                          "role": "assistant",
+                          "content": null,
+                          "tool_calls": [
+                            {
+                              "id": "call_zaaarsso",
+                              "type": "function",
+                              "function": {
+                                "name": "getActivePromotions",
+                                "arguments": "{}"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "role": "tool",
+                          "tool_call_id": "call_zaaarsso",
+                          "content": "{\"howto\":\"Use the pattern 'numeric ID: description'\", \"result\": [{\"id\":1,\"type\":\"vouchers\",\"description\":\"Wine related products\"},{\"id\":2,\"type\":\"loyalty\",\"description\":\"Loyalty points\"},{\"id\":3,\"type\":\"two-for-one\",\"description\":\"Buy 1 book, get 1 free\"}]}"
+                        }
+                      ]
+                    },
+                    {
+                      "step": "2",
+                      "content": [
+                        {
+                          "role": "user",
+                          "content": "Award a promotion to all customers interested in wine products\n\ninputs:\n[ {\n  \"id\" : \"0\",\n  \"request\" : \"Amend invoice 67095041 with the correct tax rate of 15%\",\n  \"inputs\" : null,\n  \"result\" : \"Amendment complete. Tax rate for invoice 67095041 has been corrected to 15%.\"\n}, {\n  \"id\" : \"1\",\n  \"request\" : \"Get active promotions\",\n  \"inputs\" : \"Amendment complete. Tax rate for invoice 67095041 has been corrected to 15%.\",\n  \"result\" : \"Active promotions:\\n1: Vouchers - Wine related products\\n2: Loyalty - Points\\n3: Two-for-One - Buy 1 book, get 1 free\"\n} ]"
+                        },
+                        {
+                          "role": "assistant",
+                          "content": null,
+                          "tool_calls": [
+                            {
+                              "id": "call_pg47kfxu",
+                              "type": "function",
+                              "function": {
+                                "name": "FindsCustomersInterestedInATypeOfProduct.ReturnsAListOfInvoiceIDs",
+                                "arguments": "{\"productType\":\"wine\"}"
+                              }
+                            },
+                            {
+                              "id": "call_s6kj0jte",
+                              "type": "function",
+                              "function": {
+                                "name": "awardsAPromotionToACustomer",
+                                "arguments": "{\"invoiceid\":67095041,\"promotionid\":1}"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "role": "tool",
+                          "tool_call_id": "call_pg47kfxu",
+                          "content": "[61356291, 49565075, 34911755, 54212825, 67095041]"
+                        },
+                        {
+                          "role": "tool",
+                          "tool_call_id": "call_s6kj0jte",
+                          "content": "{\"status\":\"done\"}"
+                        },
+                        {
+                          "role": "assistant",
+                          "content": null,
+                          "tool_calls": [
+                            {
+                              "id": "call_t41uky99",
+                              "type": "function",
+                              "function": {
+                                "name": "awardsAPromotionToACustomer",
+                                "arguments": "{\"invoiceid\":61356291,\"promotionid\":1}"
+                              }
+                            },
+                            {
+                              "id": "call_ql0nbp04",
+                              "type": "function",
+                              "function": {
+                                "name": "awardsAPromotionToACustomer",
+                                "arguments": "{\"invoiceid\":49565075,\"promotionid\":1}"
+                              }
+                            },
+                            {
+                              "id": "call_8lp8epdx",
+                              "type": "function",
+                              "function": {
+                                "name": "awardsAPromotionToACustomer",
+                                "arguments": "{\"invoiceid\":34911755,\"promotionid\":1}"
+                              }
+                            },
+                            {
+                              "id": "call_2jrr8uyb",
+                              "type": "function",
+                              "function": {
+                                "name": "awardsAPromotionToACustomer",
+                                "arguments": "{\"invoiceid\":54212825,\"promotionid\":1}"
+                              }
+                            },
+                            {
+                              "id": "call_cbj8d8lt",
+                              "type": "function",
+                              "function": {
+                                "name": "awardsAPromotionToACustomer",
+                                "arguments": "{\"invoiceid\":67095041,\"promotionid\":1}"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "role": "tool",
+                          "tool_call_id": "call_t41uky99",
+                          "content": "{\"status\":\"done\"}"
+                        },
+                        {
+                          "role": "tool",
+                          "tool_call_id": "call_ql0nbp04",
+                          "content": "{\"status\":\"done\"}"
+                        },
+                        {
+                          "role": "tool",
+                          "tool_call_id": "call_8lp8epdx",
+                          "content": "{\"status\":\"done\"}"
+                        },
+                        {
+                          "role": "tool",
+                          "tool_call_id": "call_2jrr8uyb",
+                          "content": "{\"status\":\"done\"}"
+                        },
+                        {
+                          "role": "tool",
+                          "tool_call_id": "call_cbj8d8lt",
+                          "content": "{\"status\":\"done\"}"
+                        }
+                      ]
+                    }
+                  ]
+        - setBody:
+            disabled: true
+            expression:
+              jq:
+                expression: >-
+                  map(
+                      . as $step | {
+                          "step": $step.step,
+                          "execution": {
+                              "user_request": ($step.content[] | select(.role == "user") | .content |= (split("\n") | .[0])) 
+                   ,
+                              "function_calls": (
+                                  [$step.content[] | select(.role == "assistant" and .tool_calls) | {
+                                      "group": [
+                                          .tool_calls[] | . as $call | {
+                                              "function": {
+                                                  "name": (
+                                                      .function.name + ": " + (.function.arguments | fromjson | [leaf_paths as $path | "\($path | join(".")): \(getpath($path))"] | join(", "))
+                                                  ),
+                                              "response": (
+                                                  $step.content[] | select(.role == "tool" and .tool_call_id == $call.id) | .content | fromjson | [leaf_paths as $path | "\($path | join(".")): \(getpath($path))"] | join(", ")
+                                              )
+                                              }
+                                          }
+                                      ]
+                                  }]
+                              )
+                          }
+                      }
+                  )
+        - log:
+            id: log-4253
+            message: ${body}
+        - process:
+            disabled: true
+            ref: composeGraph
+        - to:
+            uri: langchain4j-chat
+            parameters:
+              chatId: graph
+              chatModel: "#chatModelGraphs"
+              chatOperation: CHAT_MULTIPLE_MESSAGES
+            disabled: true
+        - log:
+            id: log-8287
+            message: "after regex: ${body}"

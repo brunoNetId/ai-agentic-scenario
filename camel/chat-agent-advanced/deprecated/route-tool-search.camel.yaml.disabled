@@ -4,7 +4,8 @@
       id: from-2899
       uri: langchain4j-tools
       parameters:
-        description: Finds customers interested in a type of product
+        description: Finds customers interested in a type of product. Returns a list of
+          invoice IDs
         parameter.productType: String
         tags: all
         toolId: query
@@ -99,3 +100,6 @@
         - log:
             id: log-3317
             message: ${body}
+        - bean:
+            method: log(search invoices)
+            ref: logger

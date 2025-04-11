@@ -1,0 +1,23 @@
+- route:
+    id: run-agent
+    from:
+      uri: direct
+      parameters:
+        name: run-agent
+      steps:
+        - log:
+            message: run remote agent with:\n${body}
+        - removeHeaders:
+            pattern: Camel*
+        - setHeader:
+            id: setHeader-7718
+            expression:
+              simple:
+                expression: planner
+            name: ai-agent
+        - to:
+            uri: http
+            parameters:
+              httpUri: http://0.0.0.0:8080/camel/chat
+        - log:
+            message: "Agent response: ${body}"

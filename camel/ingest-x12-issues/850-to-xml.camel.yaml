@@ -1,0 +1,217 @@
+- route:
+    id: 850-to-xml
+    from:
+      uri: timer
+      parameters:
+        repeatCount: 1
+        timerName: yaml
+      steps:
+        - setBody:
+            expression:
+              constant:
+                expression: resource:classpath:850-po-sample.edi
+        - unmarshal:
+            dfdl:
+              schemaUri: X12-850.dfdl.xsd
+        - setVariable:
+            id: setVariable-2198
+            expression:
+              simple:
+                expression: ${body}
+            name: x12
+        - log:
+            message: ${body}
+        - step:
+            id: kaoto-datamapper-e6fb3e6b
+            steps:
+              - to:
+                  id: kaoto-datamapper-xslt-3598
+                  uri: xslt-saxon:kaoto-datamapper-e6fb3e6b.xsl
+                  parameters: {}
+        - log:
+            message: ${body}
+        - to:
+            id: to-9012
+            uri: direct
+            parameters:
+              name: to-edi
+- route:
+    id: route-1286
+    from:
+      id: from-6135
+      uri: direct
+      parameters:
+        name: to-edi
+      steps:
+        - step:
+            id: kaoto-datamapper-2696c649
+            steps:
+              - to:
+                  id: kaoto-datamapper-xslt-9960
+                  uri: xslt-saxon:kaoto-datamapper-2696c649.xsl
+                  parameters: {}
+        - log:
+            message: ${body}
+        - setBody:
+            id: setBody-2528
+            disabled: true
+            expression:
+              simple:
+                expression: >
+                  <?xml version="1.0" encoding="UTF-8"?>
+
+                  <X12_850>
+
+                     <Header>
+                        <ISA>
+                           <ISA-01>00</ISA-01>
+                           <ISA-02>          </ISA-02>
+                           <ISA-03>00</ISA-03>
+                           <ISA-04>          </ISA-04>
+                           <ISA-05>01</ISA-05>
+                           <ISA-06>949849105</ISA-06>
+                           <ISA-07>01</ISA-07>
+                           <ISA-08>939988477</ISA-08>
+                           <ISA-09>20120906</ISA-09>
+                           <ISA-10>1200</ISA-10>
+                           <ISA-11>U</ISA-11>
+                           <ISA-12>00401</ISA-12>
+                           <ISA-13>000000001</ISA-13>
+                           <ISA-14>0</ISA-14>
+                           <ISA-15>P</ISA-15>
+                           <ISA-16>:</ISA-16>
+                        </ISA>
+                        <GS>
+                           <GS-01>PO</GS-01>
+                           <GS-02>939988477</GS-02>
+                           <GS-03>949849105</GS-03>
+                           <GS-04>20120906</GS-04>
+                           <GS-05>1200</GS-05>
+                           <GS-06>1</GS-06>
+                           <GS-07>X</GS-07>
+                           <GS-08>004010</GS-08>
+                        </GS>
+                        <ST>
+                           <ST-01>850</ST-01>
+                           <ST-02>0001</ST-02>
+                        </ST>
+                        <BEG>
+                           <BEG-01>00</BEG-01>
+                           <BEG-02>SA</BEG-02>
+                           <BEG-03>61356291</BEG-03>
+                           <BEG-05>20120906</BEG-05>
+                        </BEG>
+                        <N1Loop>
+                           <N1>
+                              <N1-01>SE</N1-01>
+                              <N1-02>Chapman, Kim and Green</N1-02>
+                              <N1-03>91</N1-03>
+                              <N1-04>949849105</N1-04>
+                           </N1>
+                           <N3>
+                              <N3-01>64731 James Branch</N3-01>
+                           </N3>
+                           <N4>
+                              <N4-01>Smithmouth</N4-01>
+                              <N4-02>NC</N4-02>
+                              <N4-03>26872</N4-03>
+                           </N4>
+                        </N1Loop>
+                     </Header>
+
+
+                  <PO1Loop>
+                        <PO1>
+                           <PO1-01>1</PO1-01>
+                           <PO1-02>5</PO1-02>
+                           <PO1-03>EA</PO1-03>
+                           <PO1-04>12</PO1-04>
+                           <PO1-05>QT</PO1-05>
+                           <PO1-06>SK</PO1-06>
+                           <PO1-07> WINEGLASS01</PO1-07>
+                        </PO1>
+                        <PIDLoop>
+                           <PID>
+                              <PID-01>F</PID-01>
+                              <PID-05>Wine Glasses Goblets Pair Clear Glass</PID-05>
+                           </PID>
+                        </PIDLoop>
+                     </PO1Loop>
+                     <PO1Loop>
+                        <PO1>
+                           <PO1-01>2</PO1-01>
+                           <PO1-02>4</PO1-02>
+                           <PO1-03>EA</PO1-03>
+                           <PO1-04>28.08</PO1-04>
+                           <PO1-05>QT</PO1-05>
+                           <PO1-06>SK</PO1-06>
+                           <PO1-07> WINERACK01</PO1-07>
+                        </PO1>
+                        <PIDLoop>
+                           <PID>
+                              <PID-01>F</PID-01>
+                              <PID-05>With Hooks Stemware Storage Multiple Uses Iron Wine Rack Hanging Glass</PID-05>
+                           </PID>
+                        </PIDLoop>
+                     </PO1Loop>
+                     <PO1Loop>
+                        <PO1>
+                           <PO1-01>3</PO1-01>
+                           <PO1-02>1</PO1-02>
+                           <PO1-03>EA</PO1-03>
+                           <PO1-04>7.5</PO1-04>
+                           <PO1-05>QT</PO1-05>
+                           <PO1-06>SK</PO1-06>
+                           <PO1-07> CORKSCREW01</PO1-07>
+                        </PO1>
+                        <PIDLoop>
+                           <PID>
+                              <PID-01>F</PID-01>
+                              <PID-05>Replacement Corkscrew Parts Spiral Worm Wine Opener Bottle Houdini</PID-05>
+                           </PID>
+                        </PIDLoop>
+                     </PO1Loop>
+                     <PO1Loop>
+                        <PO1>
+                           <PO1-01>4</PO1-01>
+                           <PO1-02>1</PO1-02>
+                           <PO1-03>EA</PO1-03>
+                           <PO1-04>12.99</PO1-04>
+                           <PO1-05>QT</PO1-05>
+                           <PO1-06>SK</PO1-06>
+                           <PO1-07> STEMLESS01</PO1-07>
+                        </PO1>
+                        <PIDLoop>
+                           <PID>
+                              <PID-01>F</PID-01>
+                              <PID-05>HOME ESSENTIALS GRADIENT STEMLESS WINE GLASSES SET OF 4 20 FL OZ (591 ml) NEW</PID-05>
+                           </PID>
+                        </PIDLoop>
+                     </PO1Loop>
+
+                    <CTT>
+                      <CTT-01>4</CTT-01>
+                      <CTT-02>11</CTT-02>
+                    </CTT>
+                    <AMT>
+                      <AMT-01>TT</AMT-01>
+                      <AMT-02>212.09</AMT-02>
+                    </AMT>
+                    <SE>
+                      <SE-01>15</SE-01>
+                      <SE-02>0001</SE-02>
+                    </SE>
+                    <GE>
+                      <GE-01>1</GE-01>
+                      <GE-02>1</GE-02>
+                    </GE>
+                    <IEA>
+                      <IEA-01>1</IEA-01>
+                      <IEA-02>000000001</IEA-02>
+                    </IEA>
+                  </X12_850>
+        - marshal:
+            dfdl:
+              schemaUri: X12-850.dfdl.xsd
+        - log:
+            message: ${body}

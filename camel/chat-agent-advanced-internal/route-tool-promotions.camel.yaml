@@ -26,10 +26,16 @@
         - setBody:
             expression:
               simple:
-                expression: "{\"howto\":\"Use the pattern 'numeric ID: description'\",
-                  \"result\": ${body}}"
+                expression: "{\"howto\":\"summarise with pattern 'ID:Description'\",\"result\":
+                  ${body}}"
         - log:
             message: ${body}
+
+
+        - bean:
+            method: "log(get promotions)"
+            ref: logger
+
 - route:
     id: route-3070
     description: award promotion
@@ -72,13 +78,6 @@
             message: "promotions: ${body}, length: ${body.size}"
         - choice:
             id: choice-1855
-            otherwise:
-              steps:
-                - to:
-                    description: process-award
-                    uri: direct
-                    parameters:
-                      name: process-award
             when:
               - id: when-2202
                 description: when no data
@@ -87,17 +86,12 @@
                       id: setBody-4141
                       expression:
                         simple:
-                          expression: '{"status":"The promotion ID provided does not exist"}'
+                          expression: The promotion ID provided does not exist
+                  - stop:
+                      id: stop-4016
                 expression:
                   simple:
                     expression: ${body.size} == 0
-- route:
-    id: process-award
-    from:
-      uri: direct
-      parameters:
-        name: process-award
-      steps:
         - to:
             id: to-1345
             uri: direct
@@ -131,9 +125,14 @@
         - setBody:
             expression:
               simple:
-                expression: '{"status":"done"}'
+                expression: done
         - log:
             message: ${body}
+
+        - bean:
+            method: "log(award promotion to: ${variable.invoiceid})"
+            ref: logger
+
 - route:
     id: compose-email-deprecated
     from:

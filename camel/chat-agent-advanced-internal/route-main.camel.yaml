@@ -1,0 +1,35 @@
+- route:
+    id: run-agent
+    from:
+      id: from-3109
+      uri: direct
+      parameters:
+        name: run-agent
+      steps:
+        - setBody:
+            id: setBody-2533
+            disabled: true
+            expression:
+              simple:
+                expression: mock agent response
+        - stop:
+            id: stop-3386
+            disabled: true
+        - process:
+            description: AI message
+            ref: createChatMessage
+        - to:
+            description: call LLM
+            uri: langchain4j-tools
+            parameters:
+              chatModel: "#chatModelMain"
+              tags: all
+              toolId: myllm
+        - setHeader:
+            id: setHeader-3277
+            expression:
+              simple:
+                expression: " no-cache"
+            name: Cache-Control
+        - log:
+            message: ${body}

@@ -1,0 +1,70 @@
+- route:
+    id: route-2089
+    from:
+      id: from-4089
+      uri: stream
+      parameters:
+        fileName: "{{sys:user.home}}/.camel/{{sys:pid}}.log"
+        kind: file
+        scanStream: true
+      steps:
+        - setBody:
+            disabled: true
+            expression:
+              simple:
+                expression: "Stream log: ${routeId}"
+        - choice:
+            id: choice-5169
+            when:
+              - id: when-2472
+                steps:
+
+                  - setVariable:
+                      expression:
+                        simple:
+                          expression: '${body.indexOf("- body: {")}'
+                      name: pos
+                  # - log:
+                  #     message: Request detected (choice) > ${substring(${variable.pos})}
+                  - log:
+                      message: detection > ${substring(3)}
+                expression:
+                  simple:
+                    expression: ${body} contains 'Request:'
+        # - filter:
+        #     id: filter-3539
+        #     steps:
+        #       - log:
+        #           id: log-2366
+        #           message: "request detected "
+        #     expression:
+        #       simple:
+        #         expression: "${body} contains 'RequestLoggingInterceptor : Request:'"
+        - log:
+            disabled: true
+            message: "Stream log: ${body}"
+- route:
+    id: route-4083
+    from:
+      id: from-1895
+      uri: timer
+      parameters:
+        period: "1000"
+        repeatCount: "1"
+        timerName: template
+      steps:
+        - setBody:
+            id: setBody-8079
+            expression:
+              simple:
+                expression: "Something what ever Detector: body: payload"
+        - setVariable:
+            id: setVariable-1447
+            expression:
+              simple:
+                expression: '${body.indexOf("body: ")}'
+            name: pos
+        - log:
+            id: log-1210
+            # message: Request detected (choice) ${substring(${variable.pos})}
+            message: Request detected (choice) ${substring(10)}

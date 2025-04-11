@@ -16,11 +16,10 @@ import dev.langchain4j.model.openai.OpenAiChatModel;
 
 import static java.time.Duration.ofSeconds;
 
-import java.io.FileOutputStream;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.github.javafaker.Faker;
 
 public class bindings extends RouteBuilder {
 
@@ -31,18 +30,8 @@ public class bindings extends RouteBuilder {
 
     private static String LLM_URL;
 
-    @PropertyInject("ollama.llm.url")
+    @PropertyInject("llm.url")
     public void setLlmUrl(String url) {
-
-        System.out.println("someone is setting the url: "+url);
-
-        // try {
-        //     throw new Exception("show trace");
-        // } catch (Exception e) {
-        //     e.printStackTrace();
-        //     // TODO: handle exception
-        // }
-
         LLM_URL = url;
     }
 
@@ -53,16 +42,10 @@ public class bindings extends RouteBuilder {
     @BindToRegistry(lazy=true)
     public static ChatLanguageModel chatModelMain(){
 
-        System.out.println("the url to use:" + getLlmUrl());
-
         ChatLanguageModel model = OpenAiChatModel.builder()
             .apiKey("EMPTY")
-            // .modelName("qwen2.5:0.5b-instruct")
             // .modelName("qwen2.5:3b-instruct")
             .modelName("qwen2.5:7b-instruct")
-            // .modelName("qwen2.5:14b-instruct")
-            // .modelName("granite3.2:2b")
-            // .modelName("granite3.2:8b")
             .baseUrl("http://"+getLlmUrl()+"/v1/")
             .temperature(0.0)
             .timeout(ofSeconds(180))
@@ -118,6 +101,8 @@ public class bindings extends RouteBuilder {
                     Use short answers.
                     """;
 
+System.out.println("input payload: " + payload);
+
                 messages.add(new SystemMessage(systemMessage.formatted(tools)));
                 messages.add(new UserMessage(payload));
 
@@ -126,4 +111,40 @@ public class bindings extends RouteBuilder {
         };
     }
 
+    @BindToRegistry(lazy=true)
+    public static Processor getTourGuide(){
+
+        return new Processor() {
+            public void process(Exchange exchange) throws Exception {
+
+                String countryCode = exchange.getMessage().getBody(String.class);
+
+                Faker faker = new Faker(new java.util.Locale(countryCode));
+
+                String name = faker.name().fullName(); // Miss Samanta Schmidt
+                String firstName = faker.name().firstName(); // Emory
+                String lastName = faker.name().lastName(); // Barton
+                String number = faker.phoneNumber().cellPhone();
+                String streetAddress = faker.address().streetAddress(); // 60018 Sawayn Brooks Suite 449
+
+                System.out.println("fake: " + streetAddress);
+
+                String response = """
+                    {
+                        "tourGuide": {
+                            "firstName":"%s",
+                            "lastName" :"%s",
+                            "contact": {
+                                "phone":"%s"
+                            }
+                        }
+                    }
+                    """;
+
+                response = response.formatted(firstName,lastName,number);
+
+                exchange.getIn().setBody(response);
+            }
+        };
+    }
 }
