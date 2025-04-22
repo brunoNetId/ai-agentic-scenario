@@ -47,6 +47,7 @@ public class planner extends RouteBuilder {
             // .modelName("qwen2.5:0.5b-instruct")
             // .modelName("qwen2.5:3b-instruct")
             .modelName("qwen2.5:7b-instruct")
+            // .modelName("qwen2.5:14b-instruct")
             // .modelName("gemma3:4b")
             .baseUrl("http://"+getLlmUrl()+"/v1/")
             .temperature(0.0)
@@ -85,12 +86,21 @@ public class planner extends RouteBuilder {
                         "steps": [
                             {
                                 "id": numeric id starts at 0,
-                                "description": a description,
+                                "description": a description (should contain all the key details of the original segment)
                                 "dependencies": not mandatory
-                                "functions": which functions map to this action                                
-                            }                      
+                                "functions": which functions map to this action
+                                "parameters": {   (key parameters relevant to the description)
+                                    some parameters here, do not include comments (//), use the field comments instead.
+                                    "id": 2,
+                                    "comments": "Assuming there is a book-related promotion with ID 2, adjust as necessary"
+                                }
+                            }
                         ]
                     }
+
+                    Note that JSON does not support comments (double slash), like: // This is a comment.
+                    Do not include comments (//) in the JSON output.
+                    Note the comments in the parameter comments, as per the pattern above.
 
                     Return the RAW JSON data, no code block Markdown envelope.
                     Only provide the plan in JSON format without extra comments.
@@ -247,8 +257,6 @@ public class planner extends RouteBuilder {
         };
     }
 
-
-
     @BindToRegistry(lazy=true)
     public static Processor createChatMessagePlanSummary(){
 
@@ -316,10 +324,64 @@ public class planner extends RouteBuilder {
         };
     }
 
-    // @BindToRegistry(lazy=true)
-    // public static void logActivity(String log){
-    //     activity += "\n>" + log;
-    // }
+
+
+    @BindToRegistry(lazy=true)
+    public static Processor createAgentMessagePlanSummary(){
+
+        return new Processor() {
+            public void process(Exchange exchange) throws Exception {
+
+                //reset activity
+                activity = "";
+
+                String payload = exchange.getMessage().getBody(String.class);
+                List<ChatMessage> messages = new ArrayList<>();
+
+
+                String systemMessage = """
+                    You provide a summary of the plan execution.
+
+                    Based on the inputs, create a summary of the requests processed and their results.
+
+                    Use the JSON pattern below to compose your response:
+                        
+                    {
+                        "step 1": "summary",
+                        "step 2": "summary",
+
+                        (when the summary includes a list, or when relevant, nest data as follows)
+                        "step3": [
+                            "summary details 1",
+                            "summary details 2",
+                            "summary with 'details in quotes'" (do not use double quotes in string values)
+                            "summary with new lines (\") are forbidden" (don't use \", use single quotes instead.)
+                            "summary with new lines (\n) are forbidden" (don't use \n, use nested structures instead.)
+                        ]                        
+                    }
+
+                    The intention is to explain the user how his request has been attended and how the system proceeded to complete the tasks.
+
+                    Respond with raw JSON.
+                    """;
+
+                    // The JSON payload above will be processed by JavaScript to produce an HTML summary so it's very important you produce JSON data that is HTML friendly.
+                    // Therefore, ensure rules like the ones that follow are taken in account:
+                    // - Do not include carriage return characters (\n), use nested structures instead.
+                    // - Do not include double quotes on the string values, nor escaped quote (\")
+                    // - Do not include other characters that may clash with JavaScript or HTML syntax.
+                    // - You can url encode strings containing not HTML friendly characters. 
+
+
+                String user = payload;
+                messages.add(new SystemMessage(systemMessage));
+                messages.add(new UserMessage(user));
+
+                exchange.getIn().setBody(messages);
+            }
+        };
+    }
+
 
     //Controller declaration
     public static class ActivityLogger {};

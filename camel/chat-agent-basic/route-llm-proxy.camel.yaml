@@ -135,11 +135,30 @@
                   expression:
                     jq:
                       expression: >-
+                        def getprompt(text): 
+                            text as $myvar | 
+                            try (fromjson | .prompt) catch $myvar ;
+
+                        def json2string(text): 
+                            text as $myvar | 
+
+                            if(try (tonumber | type == "number") catch false) then
+                                $myvar
+                            else
+                                try (fromjson | 
+                                [leaf_paths as $path | "\($path | join(".")): \(getpath($path))"] | join(", ")) catch $myvar 
+                            end;
+
                         map(
                             . as $step | {
                                 "step": $step.step,
                                 "execution": {
-                                    "user_request": ($step.content[] | select(.role == "user") | .content |= (split("\n") | .[0])),
+                                    "description": ($step.content[] | 
+                                                     select(
+                                                        .role == "user"
+                                                     ) |
+                                                     .content | getprompt(.) 
+                                    ),
                                     "tool_calls": (
                                         [$step.content[] | select(.role == "assistant" and .tool_calls) | {
                                             "group": [
@@ -148,10 +167,16 @@
                                                         "name": (
                                                             .function.name + "_" + .id + ": " + (.function.arguments | fromjson | [leaf_paths as $path | "\($path | join(".")): \(getpath($path))"] | join(", "))
                                                         ),
-                                                    "response": (
-
-                                                        $step.content[] | select(.role == "tool") | .content | try(fromjson | [leaf_paths as $path | "\($path | join(".")): \(getpath($path))"] | join(", ")) catch "not json"
-                                                    )
+                                                        "response": (
+                                                            (
+                                                                $step.content[] | 
+                                                                select(
+                                                                    .role == "tool" and 
+                                                                    .tool_call_id == $call.id
+                                                                ) | 
+                                                                .content | json2string(.)
+                                                            )
+                                                        )
                                                     }
                                                 }
                                             ]
@@ -175,6 +200,24 @@
                   message: |-
                     graph:
                     ${body}
+              - process:
+                  id: process-9943
+                  ref: findInvoiceId
+              - log:
+                  id: log-3012
+                  message: "Diagram for invoiceid: ${variable.invoiceid}"
+              - removeHeaders:
+                  pattern: "*"
+              - setHeader:
+                  id: setHeader-3789
+                  expression:
+                    simple:
+                      expression: ${variable.invoiceid}
+                  name: invoiceid
+              - to:
+                  uri: http
+                  parameters:
+                    httpUri: localhost:8100/dashboard/diagram
             aggregationStrategy: "#class:org.apache.camel.processor.aggregate.GroupedBodyAg\
               gregationStrategy"
             completionPredicate:
@@ -194,6 +237,54 @@
         repeatCount: "1"
         timerName: template
       steps:
+        - setBody:
+            id: setBody-3510
+            expression:
+              simple:
+                expression: >-
+                  ---
+
+                  config:
+                      flowchart:
+                          subGraphTitleMargin:
+                              bottom: 40
+                  ---
+
+                  graph LR
+                      A[Start] -- Step 0 --> B
+
+                      subgraph B[Amend invoice with given instructions to set the total amount to $80 for invoice ID 67095041.]
+                          direction TB
+                          B1[amendInvoiceWithGivenInstructions_call_0c827fgo: invoiceid: 67095041, message: Set total amount to $80.]
+                          B2[status: done]
+                          B1 --> B2
+                      end
+
+                      B -- Step 1 --> C
+
+                      subgraph C[Get active promotions.]
+                          direction TB
+                          C1[getActivePromotions_call_clqwvzz7: ]
+                          C2[howto: Use the pattern 'id: description', result.0.id: 100, result.0.type: vouchers, result.0.description: Wine related products, result.1.id: 101, result.1.type: loyalty, result.1.description: Loyalty points, result.2.id: 102, result.2.type: two-for-one, result.2.description: Buy 1 book, get 1 free]
+                          C1 --> C2
+                      end
+
+                      C -- Step 2 --> D
+
+                      subgraph D[Award a promotion to the customer based on their interest in Wines from the list of active promotions.]
+                          direction TB
+                          D1[awardsAPromotionToACustomer_call_rhdpkcj3: invoiceid: 67095041, promotionid: 100]
+                          D2[status: done]
+                          D1 --> D2
+                      end
+
+                      D --> E[End]
+        - process:
+            id: process-3304
+            ref: findInvoiceId
+        - log:
+            id: log-1236
+            message: "Diagram for invoiceid: ${variable.invoiceid}"
         - stop:
             id: stop-1800
         - setBody:

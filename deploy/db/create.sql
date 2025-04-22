@@ -50,9 +50,14 @@ CREATE TABLE awards (
 -- FOREIGN KEY (promotionid) REFERENCES promotions(id);
 
 
-INSERT INTO promotions (type, description, quantity, discount) VALUES ('vouchers', 'Wine related products', 1, 40.00);
-INSERT INTO promotions (type, description, quantity, discount) VALUES ('loyalty', 'Loyalty points', 10, 0.00);
-INSERT INTO promotions (type, description, quantity, discount) VALUES ('two-for-one', 'Buy 1 book, get 1 free', 1, 0.00);
+-- INSERT INTO promotions (type, description, quantity, discount) VALUES ('vouchers', 'Wine related products', 1, 40.00);
+-- INSERT INTO promotions (type, description, quantity, discount) VALUES ('loyalty', 'Loyalty points', 10, 0.00);
+-- INSERT INTO promotions (type, description, quantity, discount) VALUES ('two-for-one', 'Buy 1 book, get 1 free', 1, 0.00);
+
+INSERT INTO promotions (id, type, description, quantity, discount) VALUES (100, 'vouchers', 'Wine related products', 1, 40.00);
+INSERT INTO promotions (id, type, description, quantity, discount) VALUES (101, 'loyalty', 'Loyalty points', 10, 0.00);
+INSERT INTO promotions (id, type, description, quantity, discount) VALUES (102, 'two-for-one', 'Buy 1 book, get 1 free', 1, 0.00);
+
 
 ALTER TABLE promotions OWNER TO camel;
 ALTER TABLE customers  OWNER TO camel;

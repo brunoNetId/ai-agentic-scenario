@@ -19,6 +19,8 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class graph extends RouteBuilder {
 
@@ -74,17 +76,23 @@ public class graph extends RouteBuilder {
 
                     Each array describes interactions. Combine the arrays and organise them as steps in the following manner:
 
+                        ---
+                        config:
+                            flowchart:
+                                subGraphTitleMargin:
+                                    bottom: 40    
+                        ---
                         graph LR
                             A[Start] -- Step 0 --> B
                         
-                            subgraph B[User request: description]
+                            subgraph B[description]
                                 direction TB
                                 B1[Tool call]
                                 B2[Tool response]
                                 B1 --> B2
                             end
 
-                            subgraph C[User request: description]
+                            subgraph C[description]
                                 direction TB
                                 C1[Tool call]
                                 C2[Tool response]
@@ -114,7 +122,7 @@ public class graph extends RouteBuilder {
 
                     then combine all the tool calls of the same group in a single subgraph as follows:
 
-                        subgraph D[User request: description]
+                        subgraph D[description]
                             direction TB
                             subgraph DS1[Group calls 1]
                                 direction TB
@@ -142,9 +150,10 @@ public class graph extends RouteBuilder {
                     An interaction may have no tool calls at all, for example:
 
                     graph TD
-                        A[User Request: hello] --> B[Assistant Response: 'Hello! How can I assist you today?']
+                        A[hello] --> B[Assistant Response: 'Hello! How can I assist you today?']
                         B --> C[End]
 
+                    Respond with the raw Mermaid code.
                     """;
 
 
@@ -156,5 +165,33 @@ public class graph extends RouteBuilder {
             }
         };
     }
+
+
+    @BindToRegistry(lazy=true)
+    public static Processor findInvoiceId(){
+
+        return new Processor() {
+            public void process(Exchange exchange) throws Exception {
+
+                String payload = exchange.getMessage().getBody(String.class);
+
+                // payload = payload.split("invoiceid:\\s*(\\d+)", 0)[0];
+
+                String regex = "invoiceid:\\s*(\\d+)";
+                Pattern pattern = Pattern.compile(regex);
+                Matcher matcher = pattern.matcher(payload);
+
+                matcher.find();
+                // while (matcher.find()) {
+                //     System.out.println("Invoice ID: [" + matcher.group(1)+"]");
+                // }
+
+                // System.out.println("/n/n===========> found invoiceid: " + matcher.group(1));
+
+                exchange.setVariable("invoiceid", matcher.group(1));
+            }
+        };
+    }
+
 
 }

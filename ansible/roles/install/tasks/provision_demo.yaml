@@ -50,6 +50,22 @@
     name: "outbox"
     state: present
 
+- name: ({{ demo_namespace }}) Create TRANSCRIPTS bucket
+  amazon.aws.s3_bucket:
+    endpoint_url: "https://minio-api-{{ demo_namespace }}.{{ route_subdomain }}"
+    aws_access_key: "minio"
+    aws_secret_key: "minio123"
+    name: "transcripts"
+    state: present
+
+- name: ({{ demo_namespace }}) Create RESET bucket
+  amazon.aws.s3_bucket:
+    endpoint_url: "https://minio-api-{{ demo_namespace }}.{{ route_subdomain }}"
+    aws_access_key: "minio"
+    aws_secret_key: "minio123"
+    name: "reset"
+    state: present
+
 - name: Deploy Docling Server
   k8s:
     namespace: "{{ demo_namespace }}"

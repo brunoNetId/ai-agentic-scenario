@@ -1,7 +1,35 @@
 - route:
-    id: main
+    id: chat-flow
     from:
       uri: platform-http:/camel/chat
+      steps:
+        - setVariable:
+            id: setVariable-7136
+            expression:
+              simple:
+                expression: chat
+            name: flow-type
+        - to:
+            uri: direct
+            parameters:
+              name: main-flow
+        - log:
+            message: ${body}
+- route:
+    id: agent-flow
+    from:
+      uri: platform-http:/camel/agent
+      steps:
+        - to:
+            uri: direct
+            parameters:
+              name: main-flow
+        - log:
+            message: ${body}
+- route:
+    id: main
+    from:
+      uri: direct:main-flow
       steps:
         - setVariable:
             id: setVariable-1515
@@ -44,7 +72,7 @@
                     id: to-9760
                     uri: direct
                     parameters:
-                      name: run-agent
+                      name: call-agent
                     variableSend: user-message
                 - stop:
                     id: stop-2574
@@ -182,7 +210,11 @@
             id: setBody-2510
             expression:
               simple:
-                expression: ${jq(.description)}
+                expression: |-
+                  {
+                      "prompt": "${jq(.description)}",
+                      "parameters": ${jq(.parameters)}
+                  }
         - setProperty:
             id: setProperty-1934
             expression:
@@ -208,11 +240,13 @@
                       id: setBody-3759
                       expression:
                         simple:
-                          expression: |-
-                            ${body}
-
-                            inputs:
-                            ${variable.results}
+                          expression: >-
+                            {
+                                "prompt": "${jq(.prompt)}",
+                                "parameters": ${jq(.parameters)},
+                                "constraints": "Use the field 'context' as historical context data",
+                                "context": ${jq(variable:results,map(del(.completed)))}
+                            }
                   - setProperty:
                       id: setProperty-1634
                       expression:
@@ -226,7 +260,7 @@
             id: to-2112
             uri: direct
             parameters:
-              name: run-agent
+              name: call-agent
         - process:
             description: AI message
             disabled: true
@@ -258,9 +292,9 @@
                 expression: |-
                   . + [{
                     "id": property("CamelLoopIndex"), 
-                    "request": property("thisstep"),
-                    "inputs": property("thisinputs"),
-                    "result": property("thisresult")
+                    "completed": property("thisstep"),
+                    "params": property("thisinputs"),
+                    "response": property("thisresult")
                   }]
                 source: results
             name: results
@@ -268,7 +302,7 @@
             id: log-2670
             message: "var is: ${variable.output-${exchangeProperty.CamelLoopIndex}}"
 - route:
-    id: route-2918
+    id: plan-summary
     description: plan summary
     from:
       uri: direct
@@ -277,10 +311,23 @@
       steps:
         - log:
             message: ${body}
-        - process:
-            description: AI message
-            disabled: false
-            ref: createChatMessagePlanSummary
+        - choice:
+            id: choice-1720
+            otherwise:
+              id: otherwise-4208
+              steps:
+                - process:
+                    description: AI message
+                    ref: createAgentMessagePlanSummary
+            when:
+              - id: when-3537
+                steps:
+                  - process:
+                      description: AI message
+                      ref: createChatMessagePlanSummary
+                expression:
+                  simple:
+                    expression: ${variable.flow-type} == 'chat'
         - to:
             uri: langchain4j-chat
             parameters:
@@ -292,4 +339,3 @@
             message: "plan summary:${body}\\n\\nExecution: ${variable.results}"
         - log:
             message: "activity: ${bean:logger.getActivity}"
-

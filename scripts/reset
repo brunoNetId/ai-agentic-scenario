@@ -1,3 +1,5 @@
+#! /bin/bash
+
 NS_DEMO=demo
 MILVUS="https://milvus-milvus.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com"
 TOKEN="root:Milvus"
@@ -12,6 +14,15 @@ DB_DELETE_INVOICES="oc exec svc/postgresql -n $NS_DEMO -- psql -d demo -c 'delet
 DB_DELETE_PROMOTIONS="oc exec svc/postgresql -n $NS_DEMO -- psql -d demo -c 'delete from promotions;'"
 DB_DELETE_AWARDS="oc exec svc/postgresql -n $NS_DEMO -- psql -d demo -c 'delete from awards;'"
 
+CAMEL_START_CLEAN_BUCKETS="camel run --background resources/cleanbuckets.camel.yaml"
+CAMEL_STOP_CLEAN_BUCKETS="camel stop cleanbuckets"
+CAMEL_START_RESET_BUCKETS="camel run --background resources/resetbuckets.camel.yaml"
+CAMEL_STOP_RESET_BUCKETS="camel stop resetbuckets"
+
+CAMEL_START_INGEST="camel run --background --source-dir=../camel/ingest-invoices --dep=dev.langchain4j:langchain4j-embeddings-all-minilm-l6-v2:0.32.0"
+CAMEL_STOP_INGEST="camel stop ingest"
+
+
 MILVUS_DELETE_ALL=$(cat << 'EOF'
 	curl --request POST \
 	--url "${MILVUS}/v2/vectordb/entities/delete" \
@@ -24,9 +35,64 @@ MILVUS_DELETE_ALL=$(cat << 'EOF'
 EOF
 )
 
+echo "shutting down camel instances running..."
+eval "./agents-down"
+
+
+# Run camel ps and capture output
+output=$(camel ps)
+
+# Check if output is empty
+if [ -z "$output" ]; then
+    echo "No Camel processes running. Proceeding..."
+else
+    echo "Warning: Processes are running:"
+    echo "$output"
+    echo "Script stopped."
+    exit 1
+fi
+
+
 eval "$DB_DELETE_CUSTOMERS"
 eval "$DB_DELETE_INVOICES"
 # eval "$DB_DELETE_PROMOTIONS"
 eval "$DB_DELETE_AWARDS"
 
 eval "$MILVUS_DELETE_ALL"
+
+echo ""
+echo "Cleaning buckets..."
+eval "$CAMEL_START_CLEAN_BUCKETS"
+
+echo "Stopping cleaning..."
+eval "$CAMEL_STOP_CLEAN_BUCKETS"
+
+echo "Resetting buckets..."
+eval "$CAMEL_START_RESET_BUCKETS"
+
+echo "stop resetting..."
+eval "$CAMEL_STOP_RESET_BUCKETS"
+
+echo "Ingesting invoices..."
+eval "$CAMEL_START_INGEST"
+
+
+echo "Checking for inflight ingest processes..."
+
+while true; do
+    # Run camel get inflight ingest and capture output
+    output=$(camel get inflight ingest)
+
+    # Check if output is empty
+    if [ -z "$output" ]; then
+        echo "No inflight ingest processes found. Done."
+        break
+    else
+        echo "Inflight ingest processes still running. Waiting..."
+        sleep 5
+    fi
+done
+
+
+echo "stop ingesting..."
+eval "$CAMEL_STOP_INGEST"

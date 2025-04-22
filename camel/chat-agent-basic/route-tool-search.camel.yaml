@@ -99,3 +99,61 @@
         - log:
             id: log-3317
             message: ${body}
+- route:
+    id: route-2529
+    from:
+      id: from-1827
+      uri: langchain4j-tools
+      parameters:
+        description: get categories of products from invoice
+        tags: all
+        toolId: product-types
+      steps:
+        - setBody:
+            expression:
+              simple:
+                expression: |-
+                  {
+                      "collectionName": "mycollection",
+                      "id": [${header.invoiceid}],
+                      "outputFields": ["text"]
+                  }
+        - removeHeaders:
+            id: removeHeaders-3777
+            pattern: "*"
+        - setHeaders:
+            headers:
+              - expression:
+                  constant:
+                    expression: application/json
+                name: Content-Type
+              - expression:
+                  constant:
+                    expression: Bearer root:Milvus
+                name: Authorization
+        - to:
+            uri: https
+            parameters:
+              httpUri: "{{milvus.uri}}/v2/vectordb/entities/get"
+        - setBody:
+            id: setBody-9739
+            expression:
+              simple:
+                expression: >-
+                  Please provide the categories of these products, respond in
+                  JSON format:
+
+
+                  ${jq(.data[].text)}
+        - process:
+            id: process-9480
+            ref: categoriseProducts
+        - to:
+            id: to-4190
+            uri: langchain4j-chat
+            parameters:
+              chatId: categories
+              chatModel: "#chatModelSearch"
+              chatOperation: CHAT_MULTIPLE_MESSAGES
+        - log:
+            message: ${body}

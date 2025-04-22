@@ -1,9 +1,9 @@
 - route:
-    id: run-agent
+    id: call-agent
     from:
       uri: direct
       parameters:
-        name: run-agent
+        name: call-agent
       steps:
         - log:
             message: run remote agent with:\n${body}
@@ -18,6 +18,6 @@
         - to:
             uri: http
             parameters:
-              httpUri: http://0.0.0.0:8080/camel/chat
+              httpUri: localhost:8080/camel/chat
         - log:
             message: "Agent response: ${body}"

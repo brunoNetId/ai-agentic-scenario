@@ -38,7 +38,7 @@
             id: removeHeaders-4023
             pattern: "*"
         - log:
-            message: ${body}
+            message: "response to client: ${body}"
         - to:
             id: to-8316
             uri: log
@@ -46,3 +46,22 @@
               loggerName: debug
               showAll: false
               showHeaders: true
+- route:
+    id: route-3655
+    description: tool-think
+    from:
+      uri: langchain4j-tools
+      parameters:
+        description: Use the tool to think about something. It will not obtain new
+          information or change the database, but just append the thought to the
+          log. Use it when complex reasoning or some cache memory is needed.
+        parameter.thought: string
+        tags: all
+        toolId: think
+      steps:
+        - setBody:
+            expression:
+              simple:
+                expression: noted
+        - log:
+            message: "think: ${body}"

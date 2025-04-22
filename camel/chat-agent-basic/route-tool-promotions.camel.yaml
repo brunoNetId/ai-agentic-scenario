@@ -26,8 +26,8 @@
         - setBody:
             expression:
               simple:
-                expression: "{\"howto\":\"Use the pattern 'numeric ID: description'\",
-                  \"result\": ${body}}"
+                expression: "{\"howto\":\"Use the pattern 'id: description'\", \"result\":
+                  ${body}}"
         - log:
             message: ${body}
 - route:
@@ -87,7 +87,11 @@
                       id: setBody-4141
                       expression:
                         simple:
-                          expression: '{"status":"The promotion ID provided does not exist"}'
+                          expression: >-
+                            {
+                              "status":"error",
+                              "details":"The promotion ID provided does not exist. Call tool 'getActivePromotions' to obtain existing IDs and try again."
+                            }
                 expression:
                   simple:
                     expression: ${body.size} == 0
