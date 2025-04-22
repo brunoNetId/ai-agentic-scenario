@@ -1,0 +1,37 @@
+#! /bin/bash
+
+CAMEL_STOP_PLANNER="camel stop planner"
+CAMEL_STOP_AGENT="camel stop agent"
+CAMEL_STOP_DASHBOARD="camel stop admin"
+CAMEL_STOP_TRANSCRIPTS="camel stop transcripts"
+
+
+
+# Get the list of PIDs for entries with "dashboard" or "agent" in the name
+pids=$(camel ps --json | jq -r '.[] | select(.name | contains("planner") or contains("agent") or contains("admin") or contains("transcripts")) | .pid')
+
+# Iterate over each PID and run camel stop
+for pid in $pids; do
+    echo "Stopping process with PID: $pid"
+    camel stop "$pid"
+done
+
+
+echo "Waiting a few seconds to allow time for processes to stop..."
+sleep 5
+
+
+# echo "Stopping planner..."
+# eval "$CAMEL_STOP_PLANNER"
+
+# echo "Stopping agent..."
+# eval "$CAMEL_STOP_AGENT"
+
+# echo "Stopping dashboard..."
+
+
+# eval "$CAMEL_STOP_DASHBOARD"
+
+# echo "Stopping transcripts..."
+# eval "$CAMEL_STOP_TRANSCRIPTS"
+

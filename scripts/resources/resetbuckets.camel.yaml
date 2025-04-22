@@ -1,0 +1,49 @@
+- route:
+    id: reset-buckets
+    from:
+      uri: timer
+      parameters:
+        period: "1000"
+        repeatCount: "1"
+        timerName: template
+      steps:
+        - to:
+            uri: aws2-s3
+            parameters:
+              accessKey: minio
+              bucketNameOrArn: reset
+              forcePathStyle: true
+              operation: listObjects
+              overrideEndpoint: true
+              region: ap-south-2
+              secretKey: minio123
+              uriEndpointOverride: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+        - split:
+            steps:
+              - log:
+                  message: ${body.key}
+              - setHeader:
+                  expression:
+                    simple:
+                      expression: ingest
+                  name: CamelAwsS3BucketDestinationName
+              - setHeader:
+                  expression:
+                    simple:
+                      expression: ${body.key}
+                  name: CamelAwsS3DestinationKey
+              - toD:
+                  uri: aws2-s3
+                  parameters:
+                    accessKey: minio
+                    bucketNameOrArn: reset
+                    forcePathStyle: true
+                    keyName: ${body.key}
+                    operation: copyObject
+                    overrideEndpoint: true
+                    region: ap-south-2
+                    secretKey: minio123
+                    uriEndpointOverride: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+            expression:
+              simple:
+                expression: ${body}

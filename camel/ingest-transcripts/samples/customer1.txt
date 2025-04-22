@@ -1,0 +1,21 @@
+**Customer:** Hi there, I noticed an issue with my invoice from Wade, Scott and Glover. The total amount seems incorrect.
+
+**Agent:** Hello! Thank you for bringing this to our attention. Could you please provide me with the invoice ID so I can look into it further? It’s Invoice no: 67095041, correct?
+
+**Customer:** Yes, that's right.
+
+**Agent:** Great, thank you for confirming. Let me review the details of your invoice and get back to you as soon as possible with a resolution. Could you tell me more about what seems incorrect? Is it the total amount or something else?
+
+**Customer:** The total amount looks off. It should be $80 instead of $87.96.
+
+**Agent:** I see, thank you for that detail. I will check the invoice and verify the calculation. We’ll get back to you shortly with an update on this issue.
+
+**Customer:** Okay, thanks. Can you let me know as soon as possible?
+
+**Agent:** Absolutely! You can expect a response from us within the next 24 hours. If there’s any delay or if we need more information, I will reach out to you directly. Thank you for your patience and understanding.
+
+**Customer:** Alright, thanks. Looking forward to hearing back from you soon.
+
+**Agent:** You’re welcome! We’ll make sure to resolve this as quickly as possible. Have a great day!
+
+**Customer:** Thanks, you too.

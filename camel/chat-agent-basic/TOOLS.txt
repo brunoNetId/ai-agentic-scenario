@@ -1,0 +1,19 @@
+Consider ReadWrite operations
+-----------------------------
+Tools could be prefixed like:
+ - ReadOperationV, ReadOperationW
+ - WriteOperationX,WriteOperationY
+
+Also, tools in Camel could be tagged with:
+- read
+- write
+- readwrite
+
+This would allow the Tools component to use the tags to select Read and/or Write operations.
+
+An agent could have 2 entrypoints:
+ - dry run mode: executes only read operations
+ - real run mode: executes both read and write operations
+
+The entrypoints could set flags used by the tools to know how to behave.
+For example, dry run mode entrypoint could set a variable 'dry=true' used by Write operations to respond with mock data to simulate the run.

@@ -1,0 +1,196 @@
+The agent collects tool calls to produce a graph.
+It applies a JQ expression to simplify the data.
+
+This is a sample input:
+[
+  {
+    "step": "2",
+    "content": [
+      {
+        "role": "user",
+        "content": "Award the promotion to all customers interested in wine products.\n\ninputs:\n[ {\n  \"id\" : \"0\",\n  \"request\" : \"Amend invoice 67095041 by setting the tax rate to 15 percent.\",\n  \"inputs\" : null,\n  \"result\" : \"Amendment complete. Tax rate for invoice 67095041 has been set to 15%.\"\n}, {\n  \"id\" : \"1\",\n  \"request\" : \"Get a list of active promotions.\",\n  \"inputs\" : \"Amendment complete. Tax rate for invoice 67095041 has been set to 15%.\",\n  \"result\" : \"Active promotions:\\n1: Vouchers - Wine related products\\n2: Loyalty - Points\\n3: Two-for-One - Buy 1 book, get 1 free\"\n} ]"
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_0kr63flg",
+            "type": "function",
+            "function": {
+              "name": "FindsCustomersInterestedInATypeOfProduct",
+              "arguments": "{\"productType\":\"wine\"}"
+            }
+          },
+          {
+            "id": "call_mgjfgsow",
+            "type": "function",
+            "function": {
+              "name": "awardsAPromotionToACustomer",
+              "arguments": "{\"invoiceid\":null,\"promotionid\":1}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_0kr63flg",
+        "content": "67095041"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_mgjfgsow",
+        "content": "{\"status\":\"done\"}"
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_gbvrav2k",
+            "type": "function",
+            "function": {
+              "name": "FindsCustomersInterestedInATypeOfProduct",
+              "arguments": "{\"productType\":\"wine\"}"
+            }
+          },
+          {
+            "id": "call_83b0ca8t",
+            "type": "function",
+            "function": {
+              "name": "awardsAPromotionToACustomer",
+              "arguments": "{\"invoiceid\":67095041,\"promotionid\":1}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_gbvrav2k",
+        "content": "67095041"
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_83b0ca8t",
+        "content": "{\"status\":\"done\"}"
+      },
+      {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_8syovqik",
+            "type": "function",
+            "function": {
+              "name": "awardsAPromotionToACustomer",
+              "arguments": "{\"invoiceid\":67095041,\"promotionid\":1}"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "tool_call_id": "call_8syovqik",
+        "content": "{\"status\":\"done\"}"
+      }
+    ]
+  }
+]
+
+It applies the following JQ expression:
+map(
+    . as $step | {
+        "step": $step.step,
+        "execution": {
+            "user_request": ($step.content[] | select(.role == "user") | .content |= (split("\n") | .[0])),
+            "tool_calls": (
+                [$step.content[] | select(.role == "assistant" and .tool_calls) | {
+                    "group": [
+                        .tool_calls[] | . as $call | {
+                            "tool": {
+                                "name": (
+                                    .function.name + "_" + .id + ": " + (.function.arguments | fromjson | [leaf_paths as $path | "\($path | join(".")): \(getpath($path))"] | join(", "))
+                                ),
+                                "response": (
+                                    (
+                                        $step.content[] | 
+                                        select(
+                                            .role == "tool" and 
+                                            (.tool_call_id // "") == ($call.id // "")
+                                        ) | 
+                                        .content // "missing content" | 
+                                        try (
+                                            fromjson | 
+                                            if type == "object" or type == "array" then
+                                                [leaf_paths as $path | "\($path | join(".")): \(getpath($path))"] | join(", ")
+                                            else
+                                                tostring
+                                            end
+                                        ) catch . // "not json"
+                                    ) // "no response"
+                                )
+                            }
+                        }
+                    ]
+                }]
+            )
+        }
+    }
+)
+
+It results in:
+[
+  {
+    "step": "2",
+    "execution": {
+      "user_request": {
+        "role": "user",
+        "content": "Award the promotion to all customers interested in wine products."
+      },
+      "tool_calls": [
+        {
+          "group": [
+            {
+              "tool": {
+                "name": "FindsCustomersInterestedInATypeOfProduct_call_0kr63flg: productType: wine",
+                "response": "67095041"
+              }
+            },
+            {
+              "tool": {
+                "name": "awardsAPromotionToACustomer_call_mgjfgsow: promotionid: 1",
+                "response": "status: done"
+              }
+            }
+          ]
+        },
+        {
+          "group": [
+            {
+              "tool": {
+                "name": "FindsCustomersInterestedInATypeOfProduct_call_gbvrav2k: productType: wine",
+                "response": "67095041"
+              }
+            },
+            {
+              "tool": {
+                "name": "awardsAPromotionToACustomer_call_83b0ca8t: invoiceid: 67095041, promotionid: 1",
+                "response": "status: done"
+              }
+            }
+          ]
+        },
+        {
+          "group": [
+            {
+              "tool": {
+                "name": "awardsAPromotionToACustomer_call_8syovqik: invoiceid: 67095041, promotionid: 1",
+                "response": "status: done"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

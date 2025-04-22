@@ -1,0 +1,5 @@
+### Summary of the Problem:
+The customer suspects an error in their invoice total for Invoice no: 67095041, believing it should be $80 instead of $87.96.
+
+### Support Resolution Message:
+Inspect invoice 67095041 and verify the calculation. If incorrect, adjust and notify customer with a voucher for products of interest.
