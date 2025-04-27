@@ -116,6 +116,14 @@
                                     </xs:sequence>
                                 </xs:complexType>
                             </xs:element>
+                            <xs:element name="N9Loop" minOccurs="0" maxOccurs="2">
+                                <xs:complexType>
+                                    <xs:sequence dfdl:initiatedContent="yes">
+                                        <xs:element dfdl:ref="SegmentFormat" dfdl:initiator="N9"
+                                            name="N9" minOccurs="1" maxOccurs="1" type="N9Type" />
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
                         </xs:sequence>
                     </xs:complexType>
                 </xs:element>
@@ -242,6 +250,14 @@
     <xs:element name="N4-01" type="xs:string" minOccurs="1" maxOccurs="1"/> <!-- City -->
     <xs:element name="N4-02" type="xs:string" minOccurs="1" maxOccurs="1"/> <!-- State -->
     <xs:element name="N4-03" type="xs:string" minOccurs="1" maxOccurs="1"/> <!-- Postal Code -->
+  </xs:sequence>
+</xs:complexType>
+
+<!-- N9 Segment -->
+<xs:complexType name="N9Type">
+  <xs:sequence dfdl:ref="SegmentSequenceFormat">
+    <xs:element name="N9-01" type="xs:string" minOccurs="1" maxOccurs="1"/> <!-- ReferenceIdentifierQualifier -->
+    <xs:element name="N9-02" type="xs:string" minOccurs="1" maxOccurs="1"/> <!-- ReferenceIdentifier -->
   </xs:sequence>
 </xs:complexType>
 

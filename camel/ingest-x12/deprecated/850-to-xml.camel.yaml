@@ -10,17 +10,18 @@
             expression:
               constant:
                 expression: resource:classpath:850-po-sample.edi
+        - log:
+            message: "raw input EDI: ${body}"
         - unmarshal:
             dfdl:
               schemaUri: X12-850.dfdl.xsd
         - setVariable:
-            id: setVariable-2198
             expression:
               simple:
                 expression: ${body}
             name: x12
         - log:
-            message: ${body}
+            message: "XML EDI: ${body}"
         - step:
             id: kaoto-datamapper-e6fb3e6b
             steps:
@@ -29,16 +30,14 @@
                   uri: xslt-saxon:kaoto-datamapper-e6fb3e6b.xsl
                   parameters: {}
         - log:
-            message: ${body}
+            message: "Transformed XML ${body}"
         - to:
-            id: to-9012
             uri: direct
             parameters:
               name: to-edi
 - route:
-    id: route-1286
+    id: xml-to-850
     from:
-      id: from-6135
       uri: direct
       parameters:
         name: to-edi
@@ -51,9 +50,8 @@
                   uri: xslt-saxon:kaoto-datamapper-2696c649.xsl
                   parameters: {}
         - log:
-            message: ${body}
+            message: "back to XML EDI: ${body}"
         - setBody:
-            id: setBody-2528
             disabled: true
             expression:
               simple:
@@ -214,4 +212,4 @@
             dfdl:
               schemaUri: X12-850.dfdl.xsd
         - log:
-            message: ${body}
+            message: "marshalled EDI: ${body}"

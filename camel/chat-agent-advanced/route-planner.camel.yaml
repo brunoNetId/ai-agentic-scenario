@@ -172,7 +172,11 @@
               chatOperation: CHAT_MULTIPLE_MESSAGES
             disabled: false
         - log:
-            message: ${body}
+            message: "LLM plan: ${body}"
+        - setBody:
+            simple: ${body.replaceAll('//.*?(?=\n|$)','')}
+        - log:
+            message: "LLM plan (no comments): ${body}"
         - stop:
             id: stop-3687
             disabled: true

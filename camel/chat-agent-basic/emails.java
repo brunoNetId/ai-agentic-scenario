@@ -1,15 +1,5 @@
 //DEPS dev.langchain4j:langchain4j-open-ai:0.33.0
 
-//DEPS com.vladsch.flexmark:flexmark-all:0.64.8
-//DEPS com.itextpdf:html2pdf:4.0.5
-
-// import com.vladsch.flexmark.util.ast.Node;
-// import com.vladsch.flexmark.parser.Parser;
-// import com.vladsch.flexmark.html.HtmlRenderer;
-// import com.vladsch.flexmark.ext.tables.TablesExtension;
-// import com.vladsch.flexmark.util.data.MutableDataSet;
-// import com.itextpdf.html2pdf.HtmlConverter;
-
 import org.apache.camel.BindToRegistry;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;

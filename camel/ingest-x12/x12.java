@@ -1,20 +1,21 @@
 //DEPS dev.langchain4j:langchain4j-open-ai:0.33.0
 
+//DEPS com.vladsch.flexmark:flexmark-all:0.64.8
 //DEPS com.itextpdf:html2pdf:6.1.0
+
 //DEPS com.itextpdf:itext7-core:9.1.0@pom
 
-import com.itextpdf.html2pdf.HtmlConverter;
-import com.itextpdf.kernel.colors.DeviceGray;
-import com.itextpdf.kernel.geom.Rectangle;
-import com.itextpdf.kernel.pdf.PdfDocument;
-import com.itextpdf.kernel.pdf.PdfReader;
-import com.itextpdf.kernel.pdf.PdfWriter;
-import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
-import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
-import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor;
-import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
-import com.itextpdf.kernel.pdf.canvas.parser.listener.RegexBasedLocationExtractionStrategy;
 
+// import com.vladsch.flexmark.util.ast.Node;
+// import com.vladsch.flexmark.parser.Parser;
+// import com.vladsch.flexmark.html.HtmlRenderer;
+// import com.vladsch.flexmark.ext.tables.TablesExtension;
+// import com.vladsch.flexmark.util.data.MutableDataSet;
+import com.itextpdf.html2pdf.HtmlConverter;
+
+// import java.io.ByteArrayOutputStream;
+// import java.io.OutputStream;
+// import java.util.Collections;
 
 import org.apache.camel.BindToRegistry;
 import org.apache.camel.Exchange;
@@ -32,17 +33,54 @@ import dev.langchain4j.model.openai.OpenAiChatModel;
 
 import static java.time.Duration.ofSeconds;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
 
-public class ammend extends RouteBuilder {
+import com.itextpdf.kernel.geom.Rectangle;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfReader;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+import com.itextpdf.kernel.colors.DeviceGray;
+
+import com.itextpdf.kernel.pdf.canvas.parser.PdfCanvasProcessor;
+import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
+import com.itextpdf.kernel.pdf.canvas.parser.listener.RegexBasedLocationExtractionStrategy;
+
+// import com.itextpdf.html2pdf.ConverterProperties;
+// import com.itextpdf.html2pdf.HtmlConverter;
+// import com.itextpdf.kernel.colors.ColorConstants;
+// import com.itextpdf.kernel.events.Event;
+// import com.itextpdf.kernel.events.IEventHandler;
+// import com.itextpdf.kernel.events.PdfDocumentEvent;
+
+// import com.itextpdf.kernel.geom.Rectangle;
+// import com.itextpdf.kernel.pdf.PdfDocument;
+// import com.itextpdf.kernel.pdf.PdfPage;
+// import com.itextpdf.kernel.pdf.PdfWriter;
+// import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
+// import com.itextpdf.layout.Document;
+
+// import com.itextpdf.text.Document;
+// import com.itextpdf.text.DocumentException;
+// import com.itextpdf.text.Rectangle;
+// import com.itextpdf.text.kernel.PdfContentByte;
+// import com.itextpdf.text.pdf.PdfWriter;
+
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+
+
+
+public class x12 extends RouteBuilder {
 
     @Override
     public void configure() throws Exception {
@@ -61,7 +99,7 @@ public class ammend extends RouteBuilder {
     }
 
     @BindToRegistry(lazy=true)
-    public static ChatLanguageModel chatModelAmmend(){
+    public static ChatLanguageModel chatModelInvoice(){
 
         ChatLanguageModel model = OpenAiChatModel.builder()
             .apiKey("EMPTY")
@@ -78,9 +116,8 @@ public class ammend extends RouteBuilder {
         return model;
     }
 
-
     @BindToRegistry(lazy=true)
-    public static Processor ammendInvoiceMetadata(){
+    public static Processor generateInvoice(){
 
         return new Processor() {
             public void process(Exchange exchange) throws Exception {
@@ -88,36 +125,38 @@ public class ammend extends RouteBuilder {
                 String payload = exchange.getMessage().getBody(String.class);
                 List<ChatMessage> messages = new ArrayList<>();
 
-
-                            // {
-                            //   "InvoiceNumber": identifier,
-                            //   "DateOfIssue": date,
-                            //   "Seller": {
-                            //   },
-                            //   "Client": {
-                            //   },
-                            //   "Items": [
-                            //   ],
-                            //   "Summary": {
-                            //   }
-                            // }
-
                 String systemMessage = """
-                        You are an assistant to help fixing invoices.
+                        You are an assistant to help generate invoices.
     
-                        The invoice will come in JSON format.
-
-                        Seller and Client contain information about the two parts involved in the purchase.
-                        Items contains a list of products purchased. Each Item instance represents a row in the table.
-                        Summary contains the total cost calculation of all the products purchased.
-
-                        Modify the JSON payload as needed as per the user request.
-
-                        Provide the output as JSON.
-
-                        Do not insert comments.
+                        The input is Markdown.
+                        Provide the output as Markdown.
      
-                        Do not use ``` (backticks), just return the raw JSON value.
+                        Apply the following layout when rendering the information:
+
+                            <div style="position: relative; float: right; margin-top: 20px; margin-right: 20px; background-color: rgba(255, 0, 0, 0.7); color: white; padding: 5px 20px; font-weight: bold; transform: rotate(15deg); font-size: 14px; box-shadow: 0 0 10px rgba(0,0,0,0.3);">Amended</div>
+
+                            ## Invoice No: (number)
+                            Date of issue: (today)
+
+                            <br><br><br><br><br>
+
+                            <div style="display: flex; width: 100%;">
+                                <div style="vertical-align: top; padding-right: 40px;">
+                                    <div style="font-weight: bold; font-size: 1.2em; margin-bottom: 5px;">Seller:</div>
+                                    
+                                </div>
+                                <div style="vertical-align: top; padding-right: 40px;">
+                                    <div style="font-weight: bold; font-size: 1.2em; margin-bottom: 5px;">Client:</div>
+                                    
+                                </div>
+                            </div>
+
+                            ### ITEMS
+
+                            ### SUMMARY
+                           
+                        Do not use ``` (backticks), just return the raw Markdown value.
+                        Only return the HTML content, do not include comments.
                         """;
 
                 messages.add(new SystemMessage(systemMessage));
@@ -259,6 +298,7 @@ public class ammend extends RouteBuilder {
         float pageWidth = pageSize.getWidth();
         float pageHeight = pageSize.getHeight();
         
+
         drawSectionMarker("Seller", pdfDoc, canvas);
         drawSectionMarker("ITEMS", pdfDoc, canvas);
         drawSectionMarker("SUMMARY", pdfDoc, canvas);
@@ -291,6 +331,7 @@ public class ammend extends RouteBuilder {
         
         return outputStream;
     }
+
 
     public static void drawSectionMarker(String regex, PdfDocument pdfDoc, PdfCanvas canvas){
 
@@ -326,4 +367,6 @@ public class ammend extends RouteBuilder {
         canvas.rectangle(stripe.getX(), stripe.getY(), stripe.getWidth(), stripe.getHeight());
         canvas.fill();
     }
+
+
 }

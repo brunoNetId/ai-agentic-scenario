@@ -45,8 +45,8 @@ public class transcripts extends RouteBuilder {
         ChatLanguageModel model = OpenAiChatModel.builder()
             .apiKey("EMPTY")
             // .modelName("qwen2.5:3b-instruct")
-            .modelName("qwen2.5:7b-instruct")
-            // .modelName("qwen2.5:14b-instruct")
+            // .modelName("qwen2.5:7b-instruct")
+            .modelName("qwen2.5:14b-instruct")
             .baseUrl("http://"+getLlmUrl()+"/v1/")
             .temperature(0.0)
             .timeout(ofSeconds(180))
@@ -158,16 +158,12 @@ public class transcripts extends RouteBuilder {
 
 
                 String systemMessage = """
-                    You are an assistant to help summarizing conversations and plan resolutions.
+                    You are an assistant to help summarizing conversations and plan problem resolutions.
 
-                    Read the user message and perform the 2 tasks detailed below.
 
-                    The first task is to sumarize in one sentence the problem the customer has.
+                    To generate the resolution plan to solve the customer's problem, use concise instructions that are direct, assertive and firm to make as short and clear as possible.
 
-                    The second task is to generate a prompt containing a resolution plan to solve the customer's problem.
-                    It should include concise instructions that are direct, assertive and firm to make as short and clear as possible.
-                    
-                    Also include the types of products the customer is interested in based on the invoice details.
+                    You have tools available to obtain and include the types of products the customer is interested in based on the invoice details.
 
                     Follow the JSON pattern below to provide your answer:
 
@@ -180,19 +176,28 @@ public class transcripts extends RouteBuilder {
                             "Get the active promotions and award a promotion that fits the customer product interest""
                         ]
                     }
+
+                    Do not exclude crucial information needed by the executor, the field 'resolution' should contain all the relevant information to execute the task.
                     
                     Do not include resolution entries performing verification tasks similar to "Verify and correct...".
 
                     Design the resolution prompts to match the following capabilities an assistan will use to process them:
                     - amend invoices according to given instructions
-                    - obtain details of promotion programs available, including id and description for each promotion available
-                    - award promotions to customers based on an invoice id
+                    - award promotions to customers based their invoice id and their interests
 
                     Inspect the history of messages and ensure that you don't duplicate "tool_calls" for the assistant role.
                     Make sure the function 'extractFromInvoiceCategoriesOfProductsCustomerIsInterestedIn' is only call once and no more.
 
+                    Do not make duplicate tool calls.
+
                     Respond with raw JSON data.
                     """;
+
+                    // Design the resolution prompts to match the following capabilities an assistan will use to process them:
+                    // - amend invoices according to given instructions
+                    // - obtain details of promotion programs available which returns id and description for each promotion available
+                    // - award promotions to customers based on an invoice id
+
 
                     // You have tools available but be careful, do not loop over the same tool calls to avoid infinite tool calling.
 

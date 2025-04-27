@@ -1,0 +1,96 @@
+- route:
+    id: x12-ingestor
+    from:
+      uri: aws2-s3
+      parameters:
+        accessKey: minio
+        bucketNameOrArn: x12
+        deleteAfterRead: true
+        forcePathStyle: true
+        overrideEndpoint: true
+        region: ap-south-2
+        secretKey: minio123
+        uriEndpointOverride: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+      steps:
+        - setVariable:
+            id: setVariable-6471
+            description: keep key
+            name: original-key
+            simple:
+              expression: ${header.CamelAwsS3Key}
+        - to:
+            uri: direct
+            parameters:
+              name: process-x12
+            disabled: false
+- route:
+    id: process-x12
+    from:
+      uri: direct:process-x12
+      steps:
+        - log:
+            message: "raw input EDI: ${body}"
+        - unmarshal:
+            dfdl:
+              schemaUri: X12-850.dfdl.xsd
+        - setVariable:
+            expression:
+              simple:
+                expression: ${body}
+            name: x12
+        - log:
+            message: "XML EDI: ${body}"
+        - step:
+            id: kaoto-datamapper-e6fb3e6b
+            steps:
+              - to:
+                  id: kaoto-datamapper-xslt-3598
+                  uri: xslt-saxon:kaoto-datamapper-e6fb3e6b.xsl
+                  parameters: {}
+        - log:
+            message: Transformed XML ${body}
+        - setVariable:
+            id: setVariable-1059
+            name: invoiceid
+            xpath:
+              expression: /Invoice/InvoiceNumber/text()
+        - log:
+            message: InvoiceID:${variable.invoiceid}
+        - to:
+            uri: xslt-saxon:template-pdf.xsl
+        - log:
+            message: "HTML to PDF: ${body}"
+        - process:
+            ref: InvoiceToPDF
+        - setVariable:
+            expression:
+              simple:
+                expression: invoice_${variable.invoiceid}.pdf
+            name: filename
+        - log:
+            message: "file key: ${variable.filename}"
+        - removeHeaders:
+            disabled: false
+            pattern: "*"
+        - setHeader:
+            expression:
+              simple:
+                expression: application/pdf
+            name: CamelAwsS3ContentType
+        - to:
+            uri: aws2-s3
+            parameters:
+              accessKey: minio
+              bucketNameOrArn: ingest
+              forcePathStyle: true
+              keyName: ${variable.filename}
+              overrideEndpoint: true
+              region: ap-south-2
+              secretKey: minio123
+              uriEndpointOverride: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+        - setHeader:
+            id: setHeader-3214
+            description: reset key
+            name: CamelAwsS3Key
+            simple:
+              expression: ${variable.original-key}

@@ -1,0 +1,22 @@
+This file documents the port enabled by system to avoice conflicts.
+The systems are grouped and categorised by their function in the demo.
+
+
+Data preparation
+----------------
+8050 - data    (generate-data)
+
+Invoices ingest
+---------------
+8060 - x12     (ingest-x12)
+8070 - ingest  (ingest-invoices)
+
+Agents and Admins
+-----------------
+8080 - agent   (chat-agent-basic)
+8090 - planner (chat-agent-advanced)
+8100 - admin   (admin-dashboard)
+
+Customer support
+----------------
+8110 - transcripts (ingest-transcripts)

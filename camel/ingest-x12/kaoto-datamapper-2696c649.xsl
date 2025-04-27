@@ -170,6 +170,17 @@
                         </N4-03>
                     </N4>
                 </N1Loop>
+
+                <N9Loop>
+                    <N9>
+                        <N9-01>
+                            <xsl:value-of select="'IB'"/>
+                        </N9-01>
+                        <N9-02>
+                            <xsl:value-of select="/Invoice/Seller/IBAN"/>
+                        </N9-02>
+                    </N9>
+                </N9Loop>
             </Header>
             <xsl:for-each select="/Invoice/Items/Item">
                 <PO1Loop>

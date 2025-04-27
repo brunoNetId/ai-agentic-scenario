@@ -31,6 +31,9 @@
                 <TaxId>
                     <xsl:value-of select="/X12_850/Header/N1Loop[1]/N1/N1-04"/>
                 </TaxId>
+                <IBAN>
+                    <xsl:value-of select="/X12_850/Header/N9Loop[1]/N9/N9-02"/>
+                </IBAN>
             </Seller>
             <Client>
                 <Name>

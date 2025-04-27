@@ -14,33 +14,44 @@
         uriEndpointOverride: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
       steps:
         - to:
-            id: to-2271
             uri: direct
             parameters:
               name: get-doc-urls
         - to:
-            id: to-3562
             uri: direct
             parameters:
-              name: pdf-to-json
+              name: pdf-to-docling-json
         - to:
-            id: to-1949
+            uri: direct
+            parameters:
+              name: to-vector-db-old
+            disabled: true
+
+
+        - to:
+            uri: direct
+            parameters:
+              name: docling-to-invoice-json
+        - to:
+            uri: direct
+            parameters:
+              name: prepare-data
+
+
+        - to:
             uri: direct
             parameters:
               name: to-vector-db
-            disabled: false
         - to:
-            id: to-1056
             uri: direct
             parameters:
               name: insert-customer-db
 - route:
-    id: pdf-to-json
+    id: pdf-to-docling-json
     from:
-      id: from-3936
       uri: direct
       parameters:
-        name: pdf-to-json
+        name: pdf-to-docling-json
       steps:
         - setVariable:
             disabled: true
@@ -83,15 +94,197 @@
               httpUri: docling-server-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com/process_url
             disabled: false
         - log:
-            disabled: true
+            disabled: false
             message: ${body}
+
+
+
+
+- route:
+    id: docling-to-invoice-json
+    from:
+      uri: direct
+      parameters:
+        name: docling-to-invoice-json
+      steps:
+        - setBody:
+            jq:
+              expression: >-
+                def next_idx($num; $indexes):
+                  [ $indexes[] | select(. > $num) ] | sort | .[0];
+
+                def removeDuplicates($values):
+                  reduce $values[] as $item ({}; if has($item) then . else . + {($item): null} end) | keys_unsorted;
+
+                . as $data | $data.texts
+                | (map(.text | startswith("Seller:")) | index(true)) as $seller_idx
+                | (map(.text | startswith("Client:")) | index(true)) as $client_idx
+                | (map(.text | startswith("ITEMS")) | index(true)) as $items_idx
+                | (map(.text | startswith("SUMMARY")) | index(true)) as $summary_idx
+                | $data.texts | (length) as $last_idx
+                | [$seller_idx,$client_idx,$items_idx,$summary_idx,$last_idx] as $indexes
+                | ($data.tables[0].data.table_cells | map(.text) | [ range(0; length; 8) as $i | { Item: .[$i:$i+8]} ] | .[1:]) as $items
+                | ($data.tables[1].data.table_cells | map(.text) | [ range(0; length; 4) as $i | { Entry: .[$i:$i+4]} ] | .[1:]) as $summary
+                | {
+                    #uncomment to debug# indexes: $indexes,
+                    #uncomment to debug# rangeS: [$seller_idx, next_idx($seller_idx;$indexes)],
+                    #uncomment to debug# rangeC: [$client_idx, next_idx($client_idx;$indexes)],
+                    InvoiceNumber: ($data.texts[0].text | split(": ")[1]),
+                    DateOfIssue: ($data.texts[2].text | gsub("/"; "")),
+                    "Seller": .[$seller_idx+1:next_idx($seller_idx;$indexes)] | [.[].text] | removeDuplicates(.),
+                    "Client": .[$client_idx+1:next_idx($client_idx;$indexes)] | [.[].text] | removeDuplicates(.),
+                    "Items": $items,
+                    "Summary": $summary
+                  }
+        - log:
+            message: "trimmed JSON: ${body}"
+        - unmarshal:
+            json: {}
+        - marshal:
+            jacksonXml:
+              prettyPrint: true
+        - log: "trimmed XML: ${body}"
+        - to:
+            uri: xslt-saxon:format-invoice.xsl
+        - log:
+            message: "XML invoice: ${body}"
+        - unmarshal:
+            jacksonXml:
+              unmarshalType: java.util.LinkedHashMap
+        - marshal:
+            json: {}
+        # - to: xj:identity?transformDirection=XML2JSON
+        - log:
+            message: "JSON invoice: ${body}"
+
+- route:
+    id: prepare-data
+    from:
+      uri: direct
+      parameters:
+        name: prepare-data
+      steps:
+        - setVariable:
+            expression:
+              simple:
+                expression: ${body}
+            name: metadata
+        - setVariable:
+            expression:
+              jq:
+                expression: '.InvoiceNumber'
+                resultType: java.lang.String
+            name: invoice
+        - setVariable:
+            expression:
+              jq:
+                expression: >-
+                  .Seller.IBAN
+            name: iban
+        - setVariable:
+            expression:
+              jq:
+                expression: >-
+                  .Client.TaxId
+                resultType: java.lang.String
+            name: taxid
+        - setVariable:
+            expression:
+              jq:
+                expression: >-
+                  .Seller.Name
+                resultType: java.lang.String
+            name: name
+        - setVariable:
+            expression:
+              jq:
+                expression: >-
+                  .Seller.Name
+                  | [match("[a-zA-Z]+"; "g") | .string] 
+                  | (.[0] + "@" + .[0] + "-" + .[1] + ".com")
+                resultType: java.lang.String
+            name: email
+        - log:
+            message: "invoice: ${variable.invoice}, name: ${variable.name}, email: ${variable.email}, iban: ${variable.iban}, taxid: ${variable.taxid}"
+
+        - split:
+            steps:
+              - log:
+                  message: "split is: ${body}"
+              - setBody:
+                  expression:
+                    jq:
+                      expression: .Description + "\\n" | sub("\""; "\\\""; "g")
+            aggregationStrategy: "#myaggregator"
+            expression:
+              jq:
+                # expression: .Items.Item
+                expression: .Items.Item | if type == "array" then . else [.] end
+            parallelProcessing: false
+        - log:
+            message: "result: ${body}"
+        - to:
+            uri: langchain4j-embeddings:test?embeddingModel=#class:dev.langchain4j.model.embedding.AllMiniLmL6V2EmbeddingModel
+        - setVariable:
+            expression:
+              simple:
+                expression: ${header.CamelLangChain4jEmbeddingsVector}
+                resultType: dev.langchain4j.data.embedding.Embedding
+            name: vector
+
+
+
 - route:
     id: insert in Vector DB
     from:
-      id: from-2207
       uri: direct
       parameters:
         name: to-vector-db
+      steps:            
+        - setHeaders:
+            headers:
+              - expression:
+                  constant:
+                    expression: Bearer root:Milvus
+                name: Authorization
+              - expression:
+                  constant:
+                    expression: application/json
+                name: Content-Type
+        - setBody:
+            expression:
+              simple:
+                expression: >-
+                  {
+                      "collectionName": "mycollection",
+                      "data": [{
+                          "iban": "${variable.iban}",
+                          "invoice": ${variable.invoice},
+                          "text": "${body}",
+                          "pdf": "${variable.db-invoice-url}",
+                          "vector": ${variable.vector.vectorAsList()},
+                          "metadata": ${variable.metadata}
+                      }]
+                  }
+        - log:
+            disabled: false
+            message: "Milvus insert: ${body}"
+        - to:
+            uri: https
+            parameters:
+              httpUri: https://milvus-milvus.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com/v2/vectordb/entities/insert
+        - log:
+            message: ${body}
+
+
+
+
+- route:
+    id: insert in Vector DB (old)
+    from:
+      uri: direct
+      parameters:
+        name: to-vector-db-old
       steps:
         - setVariable:
             expression:
@@ -102,19 +295,37 @@
         - setVariable:
             expression:
               jq:
-                expression: '.texts[7].text | split(": ") | .[1]'
+                # expression: '.texts[7].text | split(": ") | .[1]'
+                # expression: '.texts[(.texts | to_entries | .[] | select(.value.text == "Seller:") | .key)+3].text | split(": ") | .[1]'
+                expression: |-
+                  .texts
+                  | (map(.text | startswith("Seller:")) | index(true)) as $seller_idx
+                  | .[$seller_idx+1:]  
+                  | (map(.text | startswith("IBAN:")) | index(true)) as $iban_idx
+                  | .[$iban_idx].text | split(": ") | .[1]
             name: iban
         - setVariable:
             expression:
               jq:
-                expression: '.texts[12].text | split(": ") | .[1]'
+                # expression: '.texts[12].text | split(": ") | .[1]'
+                expression: |-
+                  .texts
+                  | (map(.text | startswith("Client:")) | index(true)) as $seller_idx
+                  | .[$seller_idx+1:]  
+                  | (map(.text | startswith("Tax Id:")) | index(true)) as $iban_idx
+                  | .[$iban_idx].text | split(": ") | .[1]
                 resultType: java.lang.String
             name: taxid
         - setVariable:
             expression:
               jq:
+                # expression: |-
+                #   .texts[11].text 
+                #   | capture("^(?<tokens>[^0-9]+)\\s*\\d") 
+                #   | .tokens 
+                #   | rtrimstr(" ")
                 expression: |-
-                  .texts[11].text 
+                  .texts[(.texts | to_entries | .[] | select(.value.text == "Client:") | .key)+1].text 
                   | capture("^(?<tokens>[^0-9]+)\\s*\\d") 
                   | .tokens 
                   | rtrimstr(" ")
@@ -123,8 +334,12 @@
         - setVariable:
             expression:
               jq:
+                # expression: |-
+                #   .texts[11].text 
+                #   | [match("[a-zA-Z]+"; "g") | .string] 
+                #   | (.[0] + "@" + .[0] + "-" + .[1] + ".com")
                 expression: |-
-                  .texts[11].text 
+                  .texts[(.texts | to_entries | .[] | select(.value.text == "Client:") | .key)+1].text 
                   | [match("[a-zA-Z]+"; "g") | .string] 
                   | (.[0] + "@" + .[0] + "-" + .[1] + ".com")
                 resultType: java.lang.String
@@ -183,21 +398,22 @@
                           "invoice": ${variable.invoice},
                           "text": "${body}",
                           "pdf": "${variable.db-invoice-url}",
-                          "vector": ${variable.vector.vectorAsList()}
+                          "vector": ${variable.vector.vectorAsList()},
+                          "metadata": {
+                                 "product_info": {"category": null, "brand": "BrandB"},
+                                 "price": 59.99,
+                                 "in_stock": null
+                           }
                       }]
                   }
         - log:
-            id: log-2245
             disabled: true
             message: ${body}
         - to:
-            id: to-4031
             uri: https
             parameters:
               httpUri: https://milvus-milvus.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com/v2/vectordb/entities/insert
-            disabled: false
         - log:
-            id: log-1891
             message: ${body}
 - beans:
     - name: myaggregator

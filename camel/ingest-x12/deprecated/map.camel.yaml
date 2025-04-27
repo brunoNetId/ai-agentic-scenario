@@ -1,0 +1,188 @@
+- route:
+    id: generate-invoice
+    from:
+      uri: direct
+      parameters:
+        name: generate-invoice
+      steps:
+        # - setBody:
+        #     expression:
+        #       simple:
+        #         expression: ${variable.ammendment}\n\n${body}
+        # - process:
+        #     ref: generateInvoice
+        # - to:
+        #     uri: langchain4j-chat
+        #     parameters:
+        #       chatId: sim
+        #       chatModel: "#chatModelInvoice"
+        #       chatOperation: CHAT_MULTIPLE_MESSAGES
+        - log:
+            message: "markdown: ${body}"
+        - process:
+            ref: MarkdownToPDF
+        - setVariable:
+            expression:
+              simple:
+                expression: test-invoice.pdf
+            name: filename
+        - log:
+            message: "file key: ${variable.filename}"
+        - to:
+            id: to-2223
+            uri: file
+            parameters:
+              directoryName: test
+              fileName: my-test-invoice.pdf
+        - stop:
+            id: stop-1187
+        - setHeader:
+            expression:
+              simple:
+                expression: application/pdf
+            name: CamelAwsS3ContentType
+        # - to:
+        #     uri: aws2-s3
+        #     parameters:
+        #       accessKey: minio
+        #       bucketNameOrArn: invoices
+        #       forcePathStyle: true
+        #       keyName: ${variable.filename}
+        #       overrideEndpoint: true
+        #       region: ap-south-2
+        #       secretKey: minio123
+        #       uriEndpointOverride: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+        # - setHeader:
+        #     disabled: false
+        #     expression:
+        #       simple:
+        #         expression: "604800"
+        #     name: CamelMinioPresignedURLExpirationTime
+        # - toD:
+        #     uri: minio
+        #     parameters:
+        #       accessKey: minio
+        #       autoCreateBucket: false
+        #       bucketName: invoices
+        #       endpoint: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+        #       keyName: ${variable.filename}
+        #       operation: createDownloadLink
+        #       secretKey: minio123
+        #     variableReceive: new-pdf-link
+        # - to:
+        #     uri: direct
+        #     parameters:
+        #       name: call-milvus-update
+        #     disabled: true
+- route:
+    id: route-3803
+    from:
+      id: from-5518
+      uri: timer
+      parameters:
+        period: "1000"
+        repeatCount: "1"
+        timerName: template
+      steps:
+        - setBody:
+            simple:
+              expression: >-
+                <Invoice>
+                   <InvoiceNumber>61356291</InvoiceNumber>
+                   <DateOfIssue>20120906</DateOfIssue>
+                   <Seller>
+                      <Address>
+                         <Street>2280 Angela Plain</Street>
+                         <City>Hortonshire</City>
+                         <State>MS</State>
+                         <PostalCode>93248</PostalCode>
+                      </Address>
+                      <Name>Rodriguez-Stevens</Name>
+                      <TaxId>939988477</TaxId>
+                      <IBAN>GB50ACIE59715038217063</IBAN>
+                   </Seller>
+                   <Client>
+                      <Name>Chapman, Kim and Green</Name>
+                      <Address>
+                         <Street>64731 James Branch</Street>
+                         <City>Smithmouth</City>
+                         <State>NC</State>
+                         <PostalCode>26872</PostalCode>
+                      </Address>
+                      <TaxId>949849105</TaxId>
+                   </Client>
+                   <Items>
+                      <Item>
+                         <Number>1</Number>
+                         <ProductID/>
+                         <Description>Wine Glasses Goblets Pair Clear Glass</Description>
+                         <Quantity>5</Quantity>
+                         <UnitOfMeasure>Each</UnitOfMeasure>
+                         <NetPrice>12</NetPrice>
+                         <NetWorth>60</NetWorth>
+                         <VATPercentage>10</VATPercentage>
+                         <GrossWorth>66</GrossWorth>
+                         <ProductID>WINEGLASS01</ProductID>
+                      </Item>
+                      <Item>
+                         <Number>2</Number>
+                         <ProductID/>
+                         <Description>With Hooks Stemware Storage Multiple Uses Iron Wine Rack Hanging Glass</Description>
+                         <Quantity>4</Quantity>
+                         <UnitOfMeasure>Each</UnitOfMeasure>
+                         <NetPrice>28.08</NetPrice>
+                         <NetWorth>112.32</NetWorth>
+                         <VATPercentage>10</VATPercentage>
+                         <GrossWorth>123.55</GrossWorth>
+                         <ProductID>WINERACK01</ProductID>
+                      </Item>
+                      <Item>
+                         <Number>3</Number>
+                         <ProductID/>
+                         <Description>Replacement Corkscrew Parts Spiral Worm Wine Opener Bottle Houdini</Description>
+                         <Quantity>1</Quantity>
+                         <UnitOfMeasure>Each</UnitOfMeasure>
+                         <NetPrice>7.5</NetPrice>
+                         <NetWorth>7.5</NetWorth>
+                         <VATPercentage>10</VATPercentage>
+                         <GrossWorth>8.25</GrossWorth>
+                         <ProductID>CORKSCREW01</ProductID>
+                      </Item>
+                      <Item>
+                         <Number>4</Number>
+                         <ProductID/>
+                         <Description>HOME ESSENTIALS GRADIENT STEMLESS WINE GLASSES SET OF 4 20 FL OZ (591 ml) NEW</Description>
+                         <Quantity>1</Quantity>
+                         <UnitOfMeasure>Each</UnitOfMeasure>
+                         <NetPrice>12.99</NetPrice>
+                         <NetWorth>12.99</NetWorth>
+                         <VATPercentage>10</VATPercentage>
+                         <GrossWorth>14.29</GrossWorth>
+                         <ProductID>STEMLESS01</ProductID>
+                      </Item>
+                   </Items>
+                   <Summary>
+                      <VATPercentage>10</VATPercentage>
+                      <NetWorth>192.81</NetWorth>
+                      <VATAmount>19.28</VATAmount>
+                      <GrossWorth>212.09</GrossWorth>
+                   </Summary>
+                </Invoice>
+
+
+        # - setBody:
+        #     expression:
+        #       constant:
+        #         expression: resource:classpath:sample.txt
+
+
+
+        - to:
+            uri: xslt-saxon:template-pdf.xsl
+
+        - log:
+            message: "after template: ${body}"
+        - to:
+            uri: direct
+            parameters:
+              name: generate-invoice

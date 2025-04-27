@@ -74,6 +74,8 @@ public class planner extends RouteBuilder {
                 String payload = exchange.getMessage().getBody(String.class);
                 List<ChatMessage> messages = new ArrayList<>();
 
+                    // Note the comments in the parameter comments, as per the pattern above.
+
 
     // More actions can be nested if the sentences are connected in meaning between each other.
                 String systemMessage = """
@@ -100,7 +102,8 @@ public class planner extends RouteBuilder {
 
                     Note that JSON does not support comments (double slash), like: // This is a comment.
                     Do not include comments (//) in the JSON output.
-                    Note the comments in the parameter comments, as per the pattern above.
+
+                    Do not exclude crucial information needed by the executor, the fields 'description' and 'parameters' should contain all the relevant information to execute the task.
 
                     Return the RAW JSON data, no code block Markdown envelope.
                     Only provide the plan in JSON format without extra comments.
@@ -130,8 +133,8 @@ public class planner extends RouteBuilder {
                         {
                         "type": "function",
                         "function": {
-                            "name": "ammendInvoiceWithGivenInstructions",
-                            "description": "ammend invoice with given instructions",
+                            "name": "amendInvoiceWithUserInstructionsDescribedInParameterMessage",
+                            "description": "amend invoice with user instructions described in parameter message",
                             "parameters": {
                             "type": "object",
                             "properties": {

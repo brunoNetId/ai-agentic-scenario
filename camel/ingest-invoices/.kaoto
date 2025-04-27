@@ -1,0 +1,18 @@
+{
+	"kaoto-datamapper-3ac97998": {
+		"sourceBody": {
+			"type": "XML Schema",
+			"filePath": [
+				"pdf.xsd"
+			]
+		},
+		"sourceParameters": {},
+		"targetBody": {
+			"type": "XML Schema",
+			"filePath": [
+				"850.xsd"
+			]
+		},
+		"xsltPath": "kaoto-datamapper-3ac97998.xsl"
+	}
+}

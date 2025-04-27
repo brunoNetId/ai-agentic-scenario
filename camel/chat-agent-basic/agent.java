@@ -1,5 +1,4 @@
 //DEPS dev.langchain4j:langchain4j-open-ai:0.33.0
-//DEPS com.github.javafaker:javafaker:1.0.2
 
 import org.apache.camel.BindToRegistry;
 import org.apache.camel.Exchange;

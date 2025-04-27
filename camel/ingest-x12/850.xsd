@@ -21,7 +21,7 @@
       <xs:element name="Name" type="xs:string" minOccurs="1" maxOccurs="1"/>
       <xs:element name="Address" type="AddressType" minOccurs="1" maxOccurs="1"/>
       <xs:element name="TaxId" type="xs:string" minOccurs="1" maxOccurs="1"/>
-      <xs:element name="IBAN" type="xs:string" minOccurs="0" maxOccurs="1"/> <!-- Optional for Client -->
+      <xs:element name="IBAN" type="xs:string" minOccurs="0" maxOccurs="1"/> <!-- Optional for Seller -->
     </xs:sequence>
   </xs:complexType>
 

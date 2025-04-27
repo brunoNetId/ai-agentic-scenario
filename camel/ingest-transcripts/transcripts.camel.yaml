@@ -186,22 +186,22 @@
             parameters:
               name: get-doc-urls
             disabled: true
-- route:
-    id: route-2336
-    description: tool-think
-    from:
-      uri: langchain4j-tools
-      parameters:
-        description: Use the tool to think about something. It will not obtain new
-          information or change the database, but just append the thought to the
-          log. Use it when complex reasoning or some cache memory is needed.
-        parameter.thought: string
-        tags: all
-        toolId: think
-      steps:
-        - setBody:
-            expression:
-              simple:
-                expression: noted
-        - log:
-            message: "think: ${body}"
+# - route:
+#     id: route-2336
+#     description: tool-think
+#     from:
+#       uri: langchain4j-tools
+#       parameters:
+#         description: Use the tool to think about something. It will not obtain new
+#           information or change the database, but just append the thought to the
+#           log. Use it when complex reasoning or some cache memory is needed.
+#         parameter.thought: string
+#         tags: all
+#         toolId: think
+#       steps:
+#         - setBody:
+#             expression:
+#               simple:
+#                 expression: noted
+#         - log:
+#             message: "think: ${body}"

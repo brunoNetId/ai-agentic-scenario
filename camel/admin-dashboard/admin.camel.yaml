@@ -204,7 +204,7 @@
         - to:
             uri: http
             parameters:
-              httpUri: localhost:9090/camel/agent
+              httpUri: localhost:8090/camel/agent
 - route:
     id: approve
     from:

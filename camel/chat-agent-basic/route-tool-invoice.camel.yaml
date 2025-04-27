@@ -27,58 +27,55 @@
     from:
       uri: langchain4j-tools
       parameters:
-        description: amend invoice with given instructions
+        description: amend invoice with user instructions described in parameter message
         parameter.invoiceid: string
         parameter.message: string
         tags: all
         toolId: amend-invoice
       steps:
         - setVariable:
-            id: setVariable-1488
             description: set invoiceid
             expression:
               simple:
                 expression: ${header.invoiceid}
             name: invoiceid
         - setVariable:
-            id: setVariable-4134
             description: set ammendment
             expression:
               simple:
                 expression: ${header.message}
             name: ammendment
         - setVariable:
-            id: setVariable-5489
             description: set output fields
             expression:
               constant:
-                expression: '["invoice","vector","text","iban","pdf"]'
+                expression: '["invoice","vector","text","iban","pdf","metadata"]'
             name: outputFields
         - to:
             uri: direct
             parameters:
               name: call-milvus-get
         - setVariable:
-            id: setVariable-1158
             expression:
               jq:
-                expression: .data[].pdf
-            name: invoice-url
+                expression: .data[].metadata
+            name: metadata
         - to:
-            id: to-3568
-            uri: direct
-            parameters:
-              name: pdf-to-markdown
-        - to:
-            id: to-1038
             uri: direct
             parameters:
               name: ammend
         - setBody:
-            id: setBody-1498
             expression:
               simple:
-                expression: '{"status":"done"}'
+                expression: |-
+                  {
+                    "status":"done"
+                  }
+                # expression: |-
+                #   {
+                #     "status":"done",
+                #     "new-invoice": ${variable.ammended-metadata}
+                #   }
         - log:
             message: ${body}
 - route:
@@ -206,7 +203,8 @@
                           "invoice": "${jq(variable:milvus-data,.data[].invoice)}",
                           "text": "${variable.milvus-text}",
                           "pdf": "${variable.new-pdf-link}",
-                          "vector": "${jq(variable:milvus-data,.data[].vector)}"
+                          "vector": "${jq(variable:milvus-data,.data[].vector)}",
+                          "metadata": ${variable.ammended-metadata}
                       }]
                   }
         - log:
@@ -219,37 +217,7 @@
             disabled: false
         - log:
             message: "Milvus update: ${body}"
-- route:
-    id: pdf-to-markdown
-    from:
-      uri: direct
-      parameters:
-        name: pdf-to-markdown
-      steps:
-        - setBody:
-            expression:
-              simple:
-                expression: |-
-                  {
-                    "from_format": [
-                      "pdf"
-                    ],
-                    "to_format": "md",
-                    "ocr": false,
-                    "force_ocr": false,
-                    "table_mode": "fast",
-                    "source": "${variable.invoice-url}"
-                  }
-        - log:
-            message: Calling Docling to covert PDF to JSON...\n${body}
-        - to:
-            uri: https
-            parameters:
-              httpUri: docling-server-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com/process_url
-            disabled: false
-        - log:
-            disabled: false
-            message: ${body}
+
 - route:
     id: ammend
     from:
@@ -258,12 +226,11 @@
         name: ammend
       steps:
         - setBody:
-            id: setBody-4268
             expression:
               simple:
-                expression: ${variable.ammendment}\n\n${body}
+                expression: ${variable.ammendment}\n\n${variable.metadata}
         - process:
-            ref: ammendInvoice
+            ref: ammendInvoiceMetadata
         - to:
             uri: langchain4j-chat
             parameters:
@@ -271,9 +238,33 @@
               chatModel: "#chatModelAmmend"
               chatOperation: CHAT_MULTIPLE_MESSAGES
         - log:
-            message: ${body}
+            message: "Ammended JSON: ${body}"
+        - setVariable:
+            expression:
+              simple:
+                expression: ${body}
+            name: ammended-metadata
+        - unmarshal:
+            json: {}
+        - marshal:
+            jacksonXml:
+              prettyPrint: true
+        - log:
+            message: "Ammended Marshalled XML: ${body}"
+        - setBody:
+            simple:
+              expression: |-
+                <Invoice>
+                ${xpath(/*/*)}
+                </Invoice>
+        - log:
+            message: "Ammended XML ${body}"
+        - to:
+            uri: xslt-saxon:template-pdf.xsl
+        - log:
+            message: "HTML to PDF: ${body}"
         - process:
-            ref: MarkdownToPDF
+            ref: InvoiceToPDF
         - setVariable:
             expression:
               simple:
@@ -281,7 +272,6 @@
                   match("https?://[^/]+/.*/([^/?]+)") | .captures[0].string)}
             name: filename
         - log:
-            id: log-5738
             message: "file key: ${variable.filename}"
         - setHeader:
             expression:
@@ -300,7 +290,6 @@
               secretKey: minio123
               uriEndpointOverride: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
         - setHeader:
-            disabled: false
             expression:
               simple:
                 expression: "604800"
@@ -317,8 +306,7 @@
               secretKey: minio123
             variableReceive: new-pdf-link
         - to:
-            id: to-1422
             uri: direct
             parameters:
               name: call-milvus-update
-            disabled: false
+
