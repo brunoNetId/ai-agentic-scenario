@@ -37,6 +37,11 @@
                         "max_length": 512
                     }
                 }
+
+                ,{
+                    "fieldName": "metadata",
+                    "dataType": "JSON"
+                }
             ]
         },
     "indexParams": [

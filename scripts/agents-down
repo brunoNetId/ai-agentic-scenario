@@ -7,8 +7,18 @@ CAMEL_STOP_TRANSCRIPTS="camel stop transcripts"
 
 
 
-# Get the list of PIDs for entries with "dashboard" or "agent" in the name
-pids=$(camel ps --json | jq -r '.[] | select(.name | contains("planner") or contains("agent") or contains("admin") or contains("transcripts")) | .pid')
+# Get the list of PIDs for entries with "dashboard" or "agent" (and others) in the name
+# This approach is safer than stopping by name because sometimes Camel JBang does not match well the name with the PID
+pids=$(camel ps --json | 
+    jq -r '.[] | 
+    select(.name | 
+    contains("planner") or 
+    contains("agent") or 
+    contains("admin") or 
+    contains("transcripts") or 
+    contains("ingest") or 
+    contains("x12")) | 
+    .pid')
 
 # Iterate over each PID and run camel stop
 for pid in $pids; do

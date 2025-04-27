@@ -27,7 +27,7 @@
 - name: Deploy SQL script
   shell: 
     cmd: >
-      oc rsync ../deploy/db `oc get pod --selector=name=postgresql -o name -n {{ demo_namespace }}`:/tmp
+      oc rsync ../deploy/db `oc get pod --selector=name=postgresql -o name -n {{ demo_namespace }}`:/tmp -n {{ demo_namespace }}
 
 - name: Run SQL script
   shell: 

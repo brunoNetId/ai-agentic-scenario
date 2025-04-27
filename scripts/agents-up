@@ -23,6 +23,9 @@ CAMEL_START_PLANNER="camel run * --background --dep=dev.langchain4j:langchain4j-
 CAMEL_START_AGENT="camel run * --background --dep=dev.langchain4j:langchain4j-embeddings-all-minilm-l6-v2:0.32.0 --logging-level=info"
 CAMEL_START_DASHBOARD="camel run * --background --logging-level=info"
 CAMEL_START_TRANSCRIPTS="camel run * --background --dep=dev.langchain4j:langchain4j-embeddings-all-minilm-l6-v2:0.32.0 --logging-level=info"
+CAMEL_START_INGEST="camel run --background --source-dir=../camel/ingest-invoices --dep=dev.langchain4j:langchain4j-embeddings-all-minilm-l6-v2:0.32.0"
+CAMEL_START_X12="camel run --background *"
+
 
 
 eval "./agents-down"
@@ -69,5 +72,18 @@ cd ../camel/ingest-transcripts
 eval "$CAMEL_START_TRANSCRIPTS"
 cd $OLDPWD
 
+
+# =======================
+# No HTML pages to serve
+# =======================
+# echo "Starting invoices ingestion..."
+eval "$CAMEL_START_INGEST"
+
+# echo "Starting X12 ingestion..."
+# eval "$CAMEL_START_X12"
+echo "Starting X12 ingestion..."
+cd ../camel/ingest-x12
+eval "$CAMEL_START_X12"
+cd $OLDPWD
 
 eval "camel ps"
