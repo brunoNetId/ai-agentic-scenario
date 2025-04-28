@@ -122,12 +122,63 @@
                   }
         - log:
             message: "Send event diagram: ${body}"
+        - setHeader:
+            expression:
+              simple:
+                expression: GET
+            name: CamelInfinispanOperation
+        - setHeader:
+            expression:
+              simple:
+                expression: ${jq(.id)}
+                resultType: java.lang.String
+            name: CamelInfinispanKey
         - to:
-            uri: vertx-websocket
+            uri: infinispan-embedded
             parameters:
-              host: localhost
-              port: "{{camel.server.port}}"
-              sendToAll: true
+              cacheName: default
+            variableReceive: get-cache
+        - log:
+            message: "check cache: ${variable.get-cache}"
+        - choice:
+            id: choice-4481
+            otherwise:
+              id: otherwise-3101
+              steps:
+                - log:
+                    message: ignoring diagram ${body}
+            when:
+              - id: when-1301
+                steps:
+                  - log:
+                      id: log-1123
+                      message: ignoring diagram, no cache entry found.
+                simple:
+                  expression: ${variable.get-cache} == null
+              - id: when-1344
+                steps:
+                  - log:
+                      message: sending to dashboard
+                  - to:
+                      uri: vertx-websocket
+                      parameters:
+                        host: localhost
+                        port: "{{camel.server.port}}"
+                        sendToAll: true
+                  - setHeader:
+                      expression:
+                        simple:
+                          expression: REMOVE
+                      name: CamelInfinispanOperation
+                  - to:
+                      uri: infinispan-embedded
+                      parameters:
+                        cacheName: default
+                      variableReceive: remove-cache
+                  - log:
+                      message: cache entry removed ${body}
+                simple:
+                  expression: ${jq(variable:get-cache, .status)} == "approved"
 - route:
     id: send-info-to-dashboard
     description: send info to dashboard
@@ -241,6 +292,35 @@
               cacheName: default
         - log:
             message: "from cache: ${body}"
+        - setBody:
+            jq:
+              expression: .status="approved"
+              resultType: String
+        - log:
+            message: "approved: ${body}"
+        - setHeader:
+            name: CamelInfinispanValue
+            simple:
+              expression: ${body}
+        - setHeader:
+            name: CamelInfinispanOperation
+            simple:
+              expression: REPLACE
+        - to:
+            id: updateCache
+            uri: log
+            parameters:
+              loggerName: InfoLogger
+              showAll: true
+        - to:
+            uri: infinispan-embedded
+            parameters:
+              cacheName: default
+            variableReceive: operation-put
+        - log:
+            message: "from cache: ${body}"
+        - log:
+            message: "input resoltion fields: ${body}"
         - setBody:
             expression:
               jq:
