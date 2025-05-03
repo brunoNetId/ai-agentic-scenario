@@ -1,0 +1,686 @@
+# - route:
+#     id: route-1893
+#     from:
+#       uri: timer
+#       parameters:
+#         delay: "5000"
+#         includeMetadata: true
+#         period: "5000"
+#         repeatCount: "3"
+#         timerName: yaml
+#       steps:
+#         - stop:
+#             id: stop-1882
+#             disabled: false
+#         - to:
+#             uri: log
+#             parameters:
+#               loggerName: InfoLogger
+#               showAll: true
+#               showAllProperties: false
+#               showHeaders: false
+#         - setBody:
+#             expression:
+#               simple:
+#                 expression: |-
+#                   {
+#                   	"id":${exchangeProperty.CamelTimerCounter},
+#                   	"summary":"Client has been charged twice",
+#                   	"executionPlan":["Refund overcharge","send discount voucher"]
+#                   }
+#         - to:
+#             uri: direct
+#             parameters:
+#               name: to-dashboard
+# - route:
+#     id: to-dashboard
+#     from:
+#       description: to-dashboard
+#       uri: direct
+#       parameters:
+#         name: to-dashboard
+#       steps:
+#         - to:
+#             uri: vertx-websocket
+#             parameters:
+#               host: localhost
+#               port: "{{camel.server.port}}"
+#               sendToAll: true
+#         - log: ${body}
+# - route:
+#     id: Dashboard action
+#     from:
+#       id: from-1898
+#       uri: vertx-websocket
+#       parameters:
+#         host: localhost
+#         port: "{{camel.server.port}}"
+#       steps:
+#         - to:
+#             id: to-2147
+#             uri: log
+#             parameters:
+#               loggerName: InfoLogger
+#               showAll: true
+#             disabled: true
+#         - log:
+#             message: "from dashboard: ${body}"
+#         - choice:
+#             id: choice-1833
+#             otherwise:
+#               id: otherwise-3516
+#               steps:
+#                 - log:
+#                     id: log-2220
+#                     message: lets reject
+#             when:
+#               - id: when-4140
+#                 steps:
+#                   - log:
+#                       id: log-1250
+#                       message: let's approve
+#                   - wireTap:
+#                       uri: direct:sim-done
+#                       disabled: true
+#                   - to:
+#                       id: to-3603
+#                       uri: direct
+#                       parameters:
+#                         name: approve
+#                 expression:
+#                   jq:
+#                     expression: .action == "approve"
+#         - stop:
+#             id: stop-3871
+#             disabled: true
+# - route:
+#     id: send-diagram-to-dashboard
+#     description: send diagram to dashboard
+#     from:
+#       uri: platform-http
+#       parameters:
+#         path: /dashboard/diagram
+#       steps:
+#         - convertBodyTo:
+#             type: String
+#         - log:
+#             message: "sending to dashboard: invoiceid: ${header.invoiceid}
+#               diagram:\\n${body}"
+#         - marshal:
+#             base64:
+#               lineLength: "5000"
+#               lineSeparator: ""
+#               urlSafe: false
+#             variableReceive: diagram
+#         - setBody:
+#             expression:
+#               simple:
+#                 expression: |-
+#                   {
+#                   	"id":"${header.invoiceid}",
+#                   	"diagram": "${variable.diagram}"
+#                   }
+#         - log:
+#             message: "Send event diagram: ${body}"
+#         - setHeader:
+#             expression:
+#               simple:
+#                 expression: GET
+#             name: CamelInfinispanOperation
+#         - setHeader:
+#             expression:
+#               simple:
+#                 expression: ${jq(.id)}
+#                 resultType: java.lang.String
+#             name: CamelInfinispanKey
+#         - to:
+#             uri: infinispan-embedded
+#             parameters:
+#               cacheName: default
+#             variableReceive: get-cache
+#         - log:
+#             message: "check cache: ${variable.get-cache}"
+#         - choice:
+#             id: choice-4481
+#             otherwise:
+#               id: otherwise-3101
+#               steps:
+#                 - log:
+#                     message: ignoring diagram ${body}
+#             when:
+#               - id: when-1301
+#                 steps:
+#                   - log:
+#                       id: log-1123
+#                       message: ignoring diagram, no cache entry found.
+#                 simple:
+#                   expression: ${variable.get-cache} == null
+#               - id: when-1344
+#                 steps:
+#                   - log:
+#                       message: sending to dashboard
+#                   - to:
+#                       uri: vertx-websocket
+#                       parameters:
+#                         host: localhost
+#                         port: "{{camel.server.port}}"
+#                         sendToAll: true
+#                   - setHeader:
+#                       expression:
+#                         simple:
+#                           expression: REMOVE
+#                       name: CamelInfinispanOperation
+#                   - to:
+#                       uri: infinispan-embedded
+#                       parameters:
+#                         cacheName: default
+#                       variableReceive: remove-cache
+#                   - log:
+#                       message: cache entry removed ${body}
+#                 simple:
+#                   expression: ${jq(variable:get-cache, .status)} == "approved"
+# - route:
+#     id: send-info-to-dashboard
+#     description: send info to dashboard
+#     from:
+#       uri: platform-http
+#       parameters:
+#         path: /dashboard/send
+#       steps:
+#         - convertBodyTo:
+#             type: String
+#         - setBody:
+#             disabled: true
+#             expression:
+#               simple:
+#                 expression: >-
+#                   {
+#                       "invoiceid": "53737787",
+#                       "interests": ["books"],
+#                       "summary": "The customer suspects an error in their invoice total for Invoice no: 53737787, believing it should not include items like 'The Graphic Design Reference & Specification Book' and 'Escape from the Carnival of Horrors'.",
+#                       "resolution": [
+#                           "Remove the incorrect items 'The Graphic Design Reference & Specification Book' and 'Escape from the Carnival of Horrors' from Invoice 53737787.",
+#                           "Verify the total amount, ensuring it reflects only the correct charges."
+#                       ]
+#                   }
+#         - setHeader:
+#             expression:
+#               simple:
+#                 expression: ${body}
+#             name: CamelInfinispanValue
+#         - setHeader:
+#             expression:
+#               simple:
+#                 expression: ${jq(.invoiceid)}
+#                 resultType: java.lang.String
+#             name: CamelInfinispanKey
+#         - to:
+#             uri: log
+#             parameters:
+#               loggerName: putCache
+#               showHeaders: true
+#         - to:
+#             uri: infinispan-embedded
+#             parameters:
+#               cacheName: default
+#             variableReceive: cache-result
+#         - setBody:
+#             id: setBody-3946
+#             expression:
+#               simple:
+#                 expression: |-
+#                   {
+#                   	"id": "${jq(.invoiceid)}",
+#                   	"summary": "${jq(.summary)}",
+#                   	"executionPlan": ${jq(.resolution)}
+#                   }
+#         - log:
+#             message: "sending to dashboard: ${body}"
+#         - to:
+#             description: to-dashboard
+#             uri: direct
+#             parameters:
+#               name: to-dashboard
+#         - log:
+#             id: log-3567
+#             disabled: true
+#             message: "done: ${body}"
+# - route:
+#     id: call-agent
+#     from:
+#       uri: direct
+#       parameters:
+#         name: call-agent
+#       steps:
+#         - to:
+#             uri: http
+#             parameters:
+#               httpUri: localhost:8090/camel/agent
+# - route:
+#     id: approve
+#     from:
+#       uri: direct
+#       parameters:
+#         name: approve
+#       steps:
+#         - setVariable:
+#             id: setVariable-1144
+#             expression:
+#               jq:
+#                 expression: .id
+#             name: invoiceid
+#         - setHeader:
+#             expression:
+#               simple:
+#                 expression: GET
+#             name: CamelInfinispanOperation
+#         - setHeader:
+#             expression:
+#               simple:
+#                 expression: ${jq(.id)}
+#                 resultType: java.lang.String
+#             name: CamelInfinispanKey
+#         - to:
+#             id: to-2428
+#             uri: log
+#             parameters:
+#               loggerName: getCache
+#               showHeaders: true
+#         - to:
+#             uri: infinispan-embedded
+#             parameters:
+#               cacheName: default
+#         - log:
+#             message: "from cache: ${body}"
+#         - setBody:
+#             jq:
+#               expression: .status="approved"
+#               resultType: String
+#         - log:
+#             message: "approved: ${body}"
+#         - setHeader:
+#             name: CamelInfinispanValue
+#             simple:
+#               expression: ${body}
+#         - setHeader:
+#             name: CamelInfinispanOperation
+#             simple:
+#               expression: REPLACE
+#         - to:
+#             id: updateCache
+#             uri: log
+#             parameters:
+#               loggerName: InfoLogger
+#               showAll: true
+#         - to:
+#             uri: infinispan-embedded
+#             parameters:
+#               cacheName: default
+#             variableReceive: operation-put
+#         - log:
+#             message: "from cache: ${body}"
+#         - log:
+#             message: "input resoltion fields: ${body}"
+#         - setBody:
+#             expression:
+#               jq:
+#                 expression: .resolution | join(" ")
+#         - to:
+#             uri: direct
+#             parameters:
+#               name: call-agent
+#             disabled: false
+#         - log:
+#             message: "response from agent: ${body}"
+#         - to:
+#             id: tojson
+#             uri: direct
+#             parameters:
+#               name: tojson
+#             disabled: true
+#         - setBody:
+#             id: setBody-3082
+#             expression:
+#               simple:
+#                 expression: |-
+#                   {
+#                   	"id":"${variable.invoiceid}",
+#                   	"status":"completed",
+#                   	"executionSummary": ${body}
+#                   }
+#         - to:
+#             id: to-2477
+#             uri: vertx-websocket
+#             parameters:
+#               host: localhost
+#               port: "{{camel.server.port}}"
+#             disabled: false
+# - route:
+#     id: sim-done
+#     from:
+#       id: sim-done
+#       uri: direct
+#       parameters:
+#         name: sim-done
+#       steps:
+#         - log:
+#             id: log-3444
+#             message: "sim event: ${body}"
+#         - delay:
+#             expression:
+#               constant:
+#                 expression: "5000"
+#         - setBody:
+#             expression:
+#               simple:
+#                 expression: >-
+#                   {
+#                   	"id":"${jq(.id)}",
+#                   	"status":"completed",
+#                   	"executionSummary": {
+#                       "step 1": "Amended invoice with ID 67095041 successfully. The total amount was corrected from $87.96 to $80 as per instructions.",
+#                       "step 2": [
+#                           "Retrieved active promotions: id:100 - Vouchers for wine related products, id:101 - Loyalty points, id:102 - Buy 1 book, get 1 free"
+#                       ],
+#                       "step 3": "Awarded promotion with ID 100 to the customer based on their interest in wines."
+#                   }
+
+#                   }
+#         - log:
+#             message: "sim event completion: ${body}"
+#         - to:
+#             uri: vertx-websocket
+#             parameters:
+#               host: localhost
+#               port: "{{camel.server.port}}"
+#               sendToAll: true
+#         - delay:
+#             expression:
+#               constant:
+#                 expression: "5000"
+#         - setVariable:
+#             id: setVariable-3651
+#             expression:
+#               simple:
+#                 expression: >-
+#                   ---
+
+#                   config:
+#                       flowchart:
+#                           subGraphTitleMargin:
+#                               bottom: 40
+#                   ---
+
+#                   graph LR
+#                       A[Start] -- Step 0 --> B
+
+#                       subgraph B[Amend invoice with given instructions to set the total amount to $80 for invoice ID 67095041.]
+#                           direction TB
+#                           B1[amendInvoiceWithGivenInstructions_call_pwnmt3s3: invoiceid: 67095041, message: Set total amount to $80.]
+#                           B2[status: done]
+#                           B1 --> B2
+#                       end
+
+#                       B -- Step 1 --> C
+
+#                       subgraph C[Get active promotions.]
+#                           direction TB
+#                           C1[getActivePromotions_call_i0ko0fxe: ]
+#                           C2[howto: Use the pattern 'id: description', result.0.id: 100, result.0.type: vouchers, result.0.description: Wine related products, result.1.id: 101, result.1.type: loyalty, result.1.description: Loyalty points, result.2.id: 102, result.2.type: two-for-one, result.2.description: Buy 1 book, get 1 free]
+#                           C1 --> C2
+#                       end
+
+#                       C -- Step 2 --> D
+
+#                       subgraph D[Award a promotion to the customer based on their interest in Wines from the list of active promotions.]
+#                           direction TB
+#                           D1[awardsAPromotionToACustomer_call_t8gb8ewx: invoiceid: 67095041, promotionid: 100]
+#                           D2[status: done]
+#                           D1 --> D2
+#                       end
+
+#                       D --> E[End]
+#                 resultType: java.lang.String
+#             name: diagram
+#         - setVariable:
+#             id: setVariable-1116
+#             disabled: true
+#             expression:
+#               simple:
+#                 expression: '${variable.diagram.substring(${variable.diagram.indexOf("invoiceid:
+#                   ")})}'
+#             name: invoiceid
+#         - log:
+#             id: log-4747
+#             message: "invoiceid found: ${variable.invoiceid}"
+#         - marshal:
+#             base64:
+#               lineLength: "5000"
+#               lineSeparator: ""
+#               urlSafe: false
+#             variableReceive: diagram
+#             variableSend: diagram
+#         - setBody:
+#             expression:
+#               simple:
+#                 expression: |-
+#                   {
+#                   	"id":"${jq(.id)}",
+#                   	"diagram": "${variable.diagram}"
+#                   }
+#         - log:
+#             message: "sim event diagram: ${body}"
+#         - to:
+#             uri: vertx-websocket
+#             parameters:
+#               host: localhost
+#               port: "{{camel.server.port}}"
+#               sendToAll: true
+# - route:
+#     id: route-1146
+#     from:
+#       uri: timer
+#       parameters:
+#         period: "1000"
+#         repeatCount: "1"
+#         timerName: template
+#       steps:
+#         - setBody:
+#             expression:
+#               simple:
+#                 expression: >-
+#                   <ul>
+#                       <li>The invoice with ID 53737787 was amended by removing the item 'Escape from the Carnival of Horrors' and adjusting the total. The response indicates that this action was completed successfully.</li>
+#                       <li>Active promotions for books were retrieved, which included:
+#                           <ul>
+#                               <li>Vouchers for wine related products (ID: 100)</li>
+#                               <li>Loyalty points (ID: 101)</li>
+#                               <li>Buy 1 book, get 1 free (ID: 102)</li>
+#                           </ul>
+#                       The system suggested awarding a promotion to the customer. However, no specific promotion was awarded in this step.</li>
+#                       <li>A suitable promotion from the active promotions list was selected and awarded to the customer based on their recent book purchase. The promotion with ID 102 (Buy 1 book, get 1 free) was successfully applied.</li>
+#                   </ul>
+#         - to:
+#             id: to-1958
+#             uri: direct
+#             parameters:
+#               name: tojson
+#         - unmarshal:
+#             disabled: true
+#             jacksonXml: {}
+#         - marshal:
+#             disabled: true
+#             json: {}
+#         - setBody:
+#             id: setBody-3809
+#             disabled: true
+#             expression:
+#               jq:
+#                 expression: .[] | map(if type == "string" then gsub("\n"; "") | ltrimstr(" ") |
+#                   rtrimstr(" ") else .[] | map(if type == "string" then
+#                   gsub("\n"; "") | ltrimstr(" ") | rtrimstr(" ") else . end)
+#                   end)
+#         - setBody:
+#             expression:
+#               simple:
+#                 expression: |-
+#                   {
+#                   	"id":"1",
+#                   	"status":"completed",
+#                   	"executionSummary": ${body}
+#                   }
+#         - log:
+#             message: ${body}
+# - route:
+#     id: route-1363
+#     from:
+#       id: tojson
+#       uri: direct
+#       parameters:
+#         name: tojson
+#       steps:
+#         - unmarshal:
+#             jacksonXml: {}
+#         - marshal:
+#             json: {}
+#         - log:
+#             message: response to JSON ${body}
+#         - setBody:
+#             expression:
+#               jq:
+#                 expression: .[] | map(if type == "string" then gsub("\n"; "") | ltrimstr(" ") |
+#                   rtrimstr(" ") else .[] | map(if type == "string" then
+#                   gsub("\n"; "") | ltrimstr(" ") | rtrimstr(" ") else . end)
+#                   end)
+- route:
+    id: route-2215
+    from:
+      uri: timer
+      parameters:
+        delay: "10000"
+        repeatCount: "1"
+        timerName: template
+      steps:
+        - stop:
+            id: stop-1182
+        - setBody:
+            simple:
+              expression: >-
+                {
+                	"id":"53737787",
+                	"diagram": "LS0tCmNvbmZpZzoKICAgIGZsb3djaGFydDoKICAgICAgICBzdWJHcmFwaFRpdGxlTWFyZ2luOgogICAgICAgICAgICBib3R0b206IDQwCi0tLQpncmFwaCBMUgogICAgQVtTdGFydF0gLS0gU3RlcCAwIC0tPiBCCgogICAgc3ViZ3JhcGggQltwbGVhc2UgdGVsbCBtZSB0aGUgdHlwZXMgb2YgcHJvZHVjdHMgaW4gaW52b2ljZSA1MzczNzc4N10KICAgICAgICBkaXJlY3Rpb24gVEIKICAgICAgICBzdWJncmFwaCBCUzFbR3JvdXAgY2FsbHMgMV0KICAgICAgICAgICAgZGlyZWN0aW9uIFRCCiAgICAgICAgICAgIEIxW2dldENhdGVnb3JpZXNPZlByb2R1Y3RzRnJvbUludm9pY2VfY2FsbF9yMXBjcGE4dDogaW52b2ljZWlkOiA1MzczNzc4N10KICAgICAgICAgICAgQjJbY2F0ZWdvcmllcy4wOiBib29rc10KICAgICAgICAgICAgQjEgLS0+IEIyCiAgICAgICAgZW5kCiAgICBlbmQKCiAgICBCIC0tIFN0ZXAgMSAtLT4gQ1tFbmRd"
+                }
+        - log:
+            message: ${body}
+        - to:
+            uri: vertx-websocket
+            parameters:
+              host: localhost
+              port: "8100"
+              sendToAll: true
+            disabled: false
+        - to:
+            uri: vertx-websocket
+            parameters:
+              host: localhost
+              path: diagram2
+              port: "8100"
+              sendToAll: true
+            disabled: false
+- route:
+    id: Diagram action
+    from:
+      uri: vertx-websocket
+      parameters:
+        host: localhost
+        port: "8100"
+      steps:
+        - log:
+            message: hello diagram
+- route:
+    id: Diagram2 action
+    from:
+      uri: vertx-websocket
+      parameters:
+        host: localhost
+        path: diagram2
+        port: "8100"
+      steps:
+        - log:
+            message: hello diagram2
+- route:
+    id: route-3185
+    from:
+      id: from-1920
+      uri: timer
+      parameters:
+        period: "1000"
+        timerName: template
+      steps:
+        - setBody:
+            id: setBody-2338
+            disabled: true
+            simple:
+              expression: >-
+                ---
+
+                config:
+                    flowchart:
+                        subGraphTitleMargin:
+                            bottom: 40
+                ---
+
+                graph LR
+                    A[Start] -- Step 0 --> B
+
+                    subgraph B[please tell me the types of products in invoice 53737787]
+                        direction TB
+                        subgraph BS1[Group calls 1]
+                            direction TB
+                            B1[getCategoriesOfProductsFromInvoice_call_trwthbk0: invoiceid: 53737787]
+                            B2[categories.0: books]
+                            B1 --> B2
+                        end
+                    end
+
+                    B -- Step 1 --> C[End]
+        - setVariable:
+            id: setVariable-1148
+            name: diagram
+            simple:
+              expression: >-
+                ---
+
+                config:
+                    flowchart:
+                        subGraphTitleMargin:
+                            bottom: 40
+                ---
+
+                graph LR
+                    A[Start] -- Step 0 --> B
+
+                    subgraph BUI[Pplease tell me the types of products in invoice 53737787]
+                        direction TB
+                        subgraph BS1[Group calls 1]
+                            direction TB
+                            B1[getCategoriesOfProductsFromInvoice_call_trwthbk0: invoiceid: 53737787]
+                            B2[categories.0: books]
+                            B1 --> B2
+                        end
+                    end
+
+                    B -- Step 1 --> C[End]
+        - setVariable:
+            id: setVariable-4178
+            name: summary
+            simple:
+              expression: ${variable.diagram.split('subgraph .*\[')[1].split('\]')[0]}
+        - setBody:
+            id: setBody-1222
+            disabled: true
+            simple:
+              expression: ${body.split('subgraph .\[')[1].split('\]')[0]}
+        - log:
+            id: log-9375
+            message: "summary: ${variable.summary}"

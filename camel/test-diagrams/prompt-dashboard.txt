@@ -1,0 +1,84 @@
+Please build for me an HTML page with title "Admin Dashboard" center of the page.
+All the sources generated should live in a single HTML page.
+
+The page connects via WebSocket to a local server on port 8100.
+When the Websocket fails to connect or looses connection, it should attempt to reconnect. Make it a 1 second re-connect interval.
+Also, next to the title, keep a status signal on the screen, green for connected, red for not connected.
+
+A table in the page will contain information for the administrator.
+The table will have the following columns:
+- ID: to display numeric identifiers (width to fit an ID like '67095041')
+- Summary: to display a summary description
+- Execution Plan: to display a plan to execute the task
+- Status: to display the status of the task, in one or two words (small width)
+- Actions: to contain buttons the user clicks
+- Details: to contain clickable items, 1 item per line, as bullet points, to open on a popup.
+
+The Summary and Execution Plan should be of equal width.
+
+The local server will push events to the page, similar to this:
+{
+    "id":"123456",
+    "summary":"Client has been charged twice",
+    "executionPlan":["Refund overcharge","send discount voucher"]
+}
+
+For each event received, the page should display the information in a row in the table in the following manner:
+- map each field to the relevant column in the table.
+- The executionPlan should be displayed as a list of bullet points.
+- Set the status column to "Pending Approval".
+- The column "Actions" accomodates two buttons side by side the user can click: an Approve (green) and Discard button (red).
+- The Details column will display information when the row gets updated with other incoming events from the local server.
+
+Rows added to the table should alternate background colours with soft colors, for example white and grey
+
+The table should use the full width of the screen.
+Make the table pretty and the header with some soft background color.
+
+
+# Behaviour of actions in the Actions column:
+When the button 'Discard' is clicked by the user, the status should be updated to "Discarded" and the buttons replaced by a 'Remove' button.
+
+When the button 'Approve' is clicked by the user the page should send an event to the server that includes the id of the row and the action taken by the user, and the status should be updated to "Processing..." and include a spinning wheel for a visual effect and the buttons replaced by a 'Remove' button.
+
+When the local server completes processing the task it will push a completion event to the page, similar to this:
+{
+    "id":"123456",
+    "status":"completed",
+    "executionSummary": {
+        "step 1": "summary",
+        "step 2": "summary",
+
+        (when the summary includes a list, or when relevant, data will be nested as follows)
+        "step3": [
+            "summary details 1",
+            "summary details 2"
+        ]                        
+    }
+}
+
+When the completion event is received, replace the "Processing..." status with "Completed" and include in the details column a link that will render in a popup the details of the execution summary. Be careful when using JSON.stringify as it produces double quotes that might clash with HTML quotes and break the code.
+
+Title the popup for such events with "Execution Summary" and include a "Close" button at the bottom center.
+
+Later, the local server may push a new event containing a diagram of the execution encoded in Base64, similar to this:
+{
+    "id":"123456",
+    "diagram": encoded in base64
+}
+
+When the diagram event is received, include in the details column a link that will render in a popup the Mermaid diagram showing the execution flow.
+
+Use Mermaid version 11.6.0.
+
+The diagram can be very big and wide, ensure the popup adjusts its size to make the mermaid graph confortable for viewing.
+Good settings for displaying the diagram are:
+
+    popup.style.width = '90%';
+    popup.style.maxWidth = '1200px';
+
+Reset popup width settings to default when closed.
+
+Title the diagram popup for such events with "Execution Diagram" and include a "Close" button at the bottom center.
+
+When the button 'Remove' is clicked by the user, the row should be eliminated from the table, and the page should send an event to the server that includes the id of the row and the action taken by the user.

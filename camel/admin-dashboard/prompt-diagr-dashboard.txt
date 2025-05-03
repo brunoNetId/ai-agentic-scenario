@@ -1,0 +1,53 @@
+Please build for me an HTML page with title "Execution Diagrams" center of the page.
+All the sources generated should live in a single HTML page.
+
+The page connects via WebSocket to a local server on port 8100 and path /diagram.
+When the Websocket fails to connect or looses connection, it should attempt to reconnect. Make it a 1 second re-connect interval.
+Also, next to the title, keep a status signal on the screen, green for connected, red for not connected.
+
+A table in the page will contain information for the administrator.
+The table will have the following columns:
+- ID: to display numeric identifiers (width to fit an ID like '67095041')
+- Summary: to display a summary description
+- Diagram: to display a "show" button to reveal the diagram
+- Actions: to contain buttons the user clicks
+
+The local server will push events to the page, similar to this:
+{
+    "id":"53737787",
+    "summary": "please tell me the types of products in invoice 53737787...",
+    "diagram": encoded in base64
+}
+
+For each event received, the page should display the information in a row in the table in the following manner:
+- map each field to the relevant column in the table.
+- The column Diagram should include a button the user can click to reveal the diagram in a popup window.
+- The column "Actions" accomodates one "Remove" button (gray color) to eliminate the row from the table.
+
+Rows added to the table should alternate background colours with soft colors, for example white and grey
+
+The table should use the full width of the screen.
+Make the table pretty and the header with some soft background color.
+
+
+# Behaviour of the buttons in a row:
+When the user clicks the "Show" button, the page will render in a popup the details of the execution summary. Be careful when using JSON.stringify as it produces double quotes that might clash with HTML quotes and break the code.
+
+Title the popup for such events with "Execution Summary".
+Place the title and close button somewhere where it does not get hidden when scrolling down.
+
+When the diagram event is received, the "show" button allows the user to open the popup that renders the Mermaid diagram showing the execution flow.
+
+Use Mermaid version 11.6.0.
+
+The diagram can be very big and wide, ensure the popup adjusts its size to make the mermaid graph confortable for viewing.
+Good settings for displaying the diagram are:
+
+    popup.style.width = '90%';
+    popup.style.maxWidth = '1200px';
+
+Reset popup width settings to default when closed.
+
+Title the diagram popup for such events with "Execution Diagram" and include a "Close" button at the bottom center.
+
+When the button 'Remove' is clicked by the user, the row should be eliminated from the table, and the page should send an event to the server that includes the id of the row and the action taken by the user.

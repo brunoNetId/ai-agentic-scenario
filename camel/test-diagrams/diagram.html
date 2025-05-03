@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Execution Diagrams</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            text-align: center;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            vertical-align: middle;
+        }
+        .connected {
+            background-color: green;
+        }
+        .disconnected {
+            background-color: red;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #e6f3ff;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+        button {
+            padding: 5px 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 3px;
+        }
+        .show-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        .remove-btn {
+            background-color: #6c757d;
+            color: white;
+        }
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+            max-height: 80%;
+            overflow-y: auto;
+            padding: 20px;
+            width: 80%;
+            max-width: 800px;
+        }
+        .popup-content {
+            position: relative;
+            margin-bottom: 40px;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        .popup-footer {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .mermaid-diagram {
+            text-align: center;
+        }
+        .mermaid {
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Execution Diagrams</h1>
+    <span class="status disconnected"></span>
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Summary</th>
+                <th>Diagram</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div id="popup" class="popup">
+        <div class="popup-content">
+            <button class="close-btn" onclick="closePopup()">×</button>
+            <h2 id="popupTitle"></h2>
+            <div id="popupBody"></div>
+        </div>
+        <div class="popup-footer">
+            <button onclick="closePopup()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({ startOnLoad: false });
+
+        let ws = null;
+        const status = document.querySelector('.status');
+        const tableBody = document.querySelector('#dataTable tbody');
+
+        function connectWebSocket() {
+            ws = new WebSocket('ws://localhost:8100/diagram');
+
+            ws.onopen = () => {
+                status.classList.remove('disconnected');
+                status.classList.add('connected');
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                addTableRow(data);
+            };
+
+            ws.onclose = () => {
+                status.classList.remove('connected');
+                status.classList.add('disconnected');
+                setTimeout(connectWebSocket, 1000);
+            };
+
+            ws.onerror = () => {
+                ws.close();
+            };
+        }
+
+        function addTableRow(data) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td style="width: 100px;">${data.id}</td>
+                <td>${data.summary}</td>
+                <td style="width: 100px;">
+                    <button class="show-btn" onclick="showDiagram('${data.id}', '${data.diagram}')">Show</button>
+                </td>
+                <td style="width: 100px;">
+                    <button class="remove-btn" onclick="removeRow('${data.id}', this)">Remove</button>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        }
+
+        function showDiagram(id, base64Diagram) {
+            const popup = document.getElementById('popup');
+            const popupTitle = document.getElementById('popupTitle');
+            const popupBody = document.getElementById('popupBody');
+
+            popupTitle.textContent = 'Execution Diagram';
+            popupBody.innerHTML = '<div class="mermaid-diagram"><div class="mermaid">' + atob(base64Diagram) + '</div></div>';
+
+            popup.style.width = '90%';
+            popup.style.maxWidth = '1200px';
+            popup.style.display = 'block';
+
+            mermaid.run({ querySelector: '.mermaid' });
+        }
+
+        function removeRow(id, button) {
+            const row = button.closest('tr');
+            row.remove();
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ id, action: 'remove' }));
+            }
+        }
+
+        function closePopup() {
+            const popup = document.getElementById('popup');
+            popup.style.display = 'none';
+            popup.style.width = '80%';
+            popup.style.maxWidth = '800px';
+            document.getElementById('popupBody').innerHTML = '';
+        }
+
+        connectWebSocket();
+    </script>
+</body>
+</html>

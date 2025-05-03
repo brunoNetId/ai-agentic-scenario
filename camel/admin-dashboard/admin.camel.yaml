@@ -106,18 +106,24 @@
         - log:
             message: "sending to dashboard: invoiceid: ${header.invoiceid}
               diagram:\\n${body}"
+        - setVariable:
+            name: summary
+            simple:
+              expression: ${body.split('subgraph .*\[')[1].split('\]')[0]}
         - marshal:
             base64:
               lineLength: "5000"
               lineSeparator: ""
               urlSafe: false
             variableReceive: diagram
+
         - setBody:
             expression:
               simple:
                 expression: |-
                   {
                   	"id":"${header.invoiceid}",
+                    "summary": "${variable.summary}",
                   	"diagram": "${variable.diagram}"
                   }
         - log:
@@ -146,25 +152,55 @@
               id: otherwise-3101
               steps:
                 - log:
-                    message: ignoring diagram ${body}
+                    message: send to diagram dashboard:${body}
+                - to:
+                    uri: vertx-websocket
+                    parameters:
+                      host: localhost
+                      port: "{{camel.server.port}}"
+                      path: diagram
+                      sendToAll: true
             when:
               - id: when-1301
                 steps:
                   - log:
                       id: log-1123
                       message: ignoring diagram, no cache entry found.
+                  - to:
+                      uri: vertx-websocket
+                      parameters:
+                        host: localhost
+                        port: "{{camel.server.port}}"
+                        path: diagram
+                        sendToAll: true
                 simple:
                   expression: ${variable.get-cache} == null
               - id: when-1344
                 steps:
                   - log:
                       message: sending to dashboard
-                  - to:
-                      uri: vertx-websocket
-                      parameters:
-                        host: localhost
-                        port: "{{camel.server.port}}"
-                        sendToAll: true
+                  # - to:
+                  #     uri: vertx-websocket
+                  #     parameters:
+                  #       host: localhost
+                  #       port: "{{camel.server.port}}"
+                  #       sendToAll: true
+
+                  - multicast:
+                      steps:
+                        - to:
+                            uri: vertx-websocket
+                            parameters:
+                              host: localhost
+                              port: "{{camel.server.port}}"
+                              sendToAll: true
+                        - to:
+                            uri: vertx-websocket
+                            parameters:
+                              host: localhost
+                              port: "{{camel.server.port}}"
+                              path: diagram
+                              sendToAll: true
                   - setHeader:
                       expression:
                         simple:
@@ -552,3 +588,42 @@
                   rtrimstr(" ") else .[] | map(if type == "string" then
                   gsub("\n"; "") | ltrimstr(" ") | rtrimstr(" ") else . end)
                   end)
+# - route:
+#     id: route-2215
+#     from:
+#       uri: timer
+#       parameters:
+#         delay: "5000"
+#         period: "1000"
+#         repeatCount: "1"
+#         timerName: template
+#       steps:
+#         - stop:
+#             id: stop-6513
+#         - setBody:
+#             simple:
+#               expression: >-
+#                 {
+#                 	"id":"53737787",
+#                 	"diagram": "LS0tCmNvbmZpZzoKICAgIGZsb3djaGFydDoKICAgICAgICBzdWJHcmFwaFRpdGxlTWFyZ2luOgogICAgICAgICAgICBib3R0b206IDQwCi0tLQpncmFwaCBMUgogICAgQVtTdGFydF0gLS0gU3RlcCAwIC0tPiBCCgogICAgc3ViZ3JhcGggQltwbGVhc2UgdGVsbCBtZSB0aGUgdHlwZXMgb2YgcHJvZHVjdHMgaW4gaW52b2ljZSA1MzczNzc4N10KICAgICAgICBkaXJlY3Rpb24gVEIKICAgICAgICBzdWJncmFwaCBCUzFbR3JvdXAgY2FsbHMgMV0KICAgICAgICAgICAgZGlyZWN0aW9uIFRCCiAgICAgICAgICAgIEIxW2dldENhdGVnb3JpZXNPZlByb2R1Y3RzRnJvbUludm9pY2VfY2FsbF9yMXBjcGE4dDogaW52b2ljZWlkOiA1MzczNzc4N10KICAgICAgICAgICAgQjJbY2F0ZWdvcmllcy4wOiBib29rc10KICAgICAgICAgICAgQjEgLS0+IEIyCiAgICAgICAgZW5kCiAgICBlbmQKCiAgICBCIC0tIFN0ZXAgMSAtLT4gQ1tFbmRd"
+#                 }
+#         - log:
+#             message: ${body}
+#         - to:
+#             uri: vertx-websocket
+#             parameters:
+#               host: localhost
+#               path: /diagram
+#               port: "10000"
+#             disabled: false
+# - route:
+#     id: Diagram action
+#     from:
+#       uri: vertx-websocket
+#       parameters:
+#         host: localhost
+#         path: /diagram
+#         port: "8100"
+#       steps:
+#         - log:
+#             message: hello diagram

@@ -188,7 +188,16 @@ public class graph extends RouteBuilder {
 
                 // System.out.println("/n/n===========> found invoiceid: " + matcher.group(1));
 
-                exchange.setVariable("invoiceid", matcher.group(1));
+                String id = "undefined";
+                try{
+                    id = matcher.group(1);
+                }
+                catch(Exception e){
+                    //could not obtain an ID
+                }
+
+                // exchange.setVariable("invoiceid", matcher.group(1));
+                exchange.setVariable("invoiceid", id);
             }
         };
     }

@@ -46,7 +46,7 @@
                       "limit": 5,
                       "searchParams": {
                           "params": {
-                              "radius": 0.40
+                              "radius": 0.20
                           }
                       }
                   }

@@ -106,107 +106,15 @@ public class planner extends RouteBuilder {
 
                     Do not exclude crucial information needed by the executor, the fields 'description' and 'parameters' should contain all the relevant information to execute the task.
 
+                    We know the downstream processor that will execute the plan has access to the following services:
+                    - ammend invoice according to provided instructions
+                    - find invoices containig products related to a given category
+                    - obtain promotion programs and their id
+                    - award promotion to the invoice customer
+
                     Return the RAW JSON data, no code block Markdown envelope.
                     Only provide the plan in JSON format without extra comments.
 
-                    When generating the execution plan, take in account the following tools are available downstream:
-
-                    {
-                      "tools": [
-                        {
-                        "type": "function",
-                        "function": {
-                            "name": "getHTMLLinkToPDFDocumentForGivenInvoiceIdentifier",
-                            "description": "get HTML link to PDF document for given invoice identifier",
-                            "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "invoiceid": {
-                                "type": "string"
-                                }
-                            },
-                            "required": [
-                                "invoiceid"
-                            ]
-                            }
-                        }
-                        },
-                        {
-                        "type": "function",
-                        "function": {
-                            "name": "amendInvoiceWithUserInstructionsDescribedInParameterMessage",
-                            "description": "amend invoice with user instructions described in parameter message",
-                            "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "invoiceid": {
-                                "type": "string"
-                                },
-                                "message": {
-                                "type": "string"
-                                }
-                            },
-                            "required": [
-                                "invoiceid",
-                                "message"
-                            ]
-                            }
-                        }
-                        },
-                        {
-                        "type": "function",
-                        "function": {
-                            "name": "getActivePromotions",
-                            "description": "get active promotions",
-                            "parameters": {
-                            "type": "object",
-                            "properties": {},
-                            "required": []
-                            }
-                        }
-                        },
-                        {
-                        "type": "function",
-                        "function": {
-                            "name": "awardsAPromotionToACustomer",
-                            "description": "awards a promotion to a customer",
-                            "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "invoiceid": {
-                                "type": "number"
-                                },
-                                "promotionid": {
-                                "type": "number"
-                                }
-                            },
-                            "required": [
-                                "invoiceid",
-                                "promotionid"
-                            ]
-                            }
-                        }
-                        },
-                        {
-                        "type": "function",
-                        "function": {
-                            "name": "GetListOfInvoicesForPurchasesOfATypeOfProduct",
-                            "description": "Get list of invoices for purchases of a type of product",
-                            "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "productType": {
-                                "type": "String"
-                                }
-                            },
-                            "required": [
-                                "productType"
-                            ]
-                            }
-                        }
-                        }
-                    ]
-                    }
 
 
                     """;
@@ -299,6 +207,8 @@ public class planner extends RouteBuilder {
                 //     """;
 
                 String systemMessage = """
+                    /no_think
+
                     You provide a summary of the plan execution.
 
                     Based on the inputs, create a summary of the requests processed and their results.
@@ -344,6 +254,8 @@ public class planner extends RouteBuilder {
 
 
                 String systemMessage = """
+                    /no_think
+
                     You provide a summary of the plan execution.
 
                     Based on the inputs, create a summary of the requests processed and their results.

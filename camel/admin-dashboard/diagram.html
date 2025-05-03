@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Execution Diagrams</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+        .connected {
+            background-color: green;
+        }
+        .disconnected {
+            background-color: red;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #e6f3ff;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:nth-child(odd) {
+            background-color: #ffffff;
+        }
+        button {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .show-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .remove-btn {
+            background-color: #808080;
+            color: white;
+        }
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .popup-header {
+            position: sticky;
+            top: 0;
+            background-color: white;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            z-index: 1001;
+        }
+        .popup-content {
+            margin-top: 20px;
+        }
+        .close-btn {
+            background-color: #ff4444;
+            color: white;
+            padding: 8px 16px;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        .mermaid-diagram {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Execution Diagrams<span id="status" class="status-indicator disconnected"></span></h1>
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th style="width: 100px;">ID</th>
+                <th>Summary</th>
+                <th style="width: 100px;">Diagram</th>
+                <th style="width: 100px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <div id="overlay" class="overlay"></div>
+    <div id="popup" class="popup">
+        <div class="popup-header">
+            <h2 id="popup-title"></h2>
+            <button onclick="closePopup()" class="close-btn">Close</button>
+        </div>
+        <div id="popup-content" class="popup-content"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        const tableBody = document.querySelector('#dataTable tbody');
+        const statusIndicator = document.getElementById('status');
+        const popup = document.getElementById('popup');
+        const overlay = document.getElementById('overlay');
+        const popupTitle = document.getElementById('popup-title');
+        const popupContent = document.getElementById('popup-content');
+
+        function connectWebSocket() {
+            ws = new WebSocket('ws://localhost:8100/diagram');
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                statusIndicator.classList.remove('disconnected');
+                statusIndicator.classList.add('connected');
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                addTableRow(data);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                statusIndicator.classList.remove('connected');
+                statusIndicator.classList.add('disconnected');
+                setTimeout(connectWebSocket, 1000);
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                ws.close();
+            };
+        }
+
+        function addTableRow(data) {
+            const row = document.createElement('tr');
+            row.setAttribute('data-id', data.id);
+            row.innerHTML = `
+                <td>${data.id}</td>
+                <td>${data.summary}</td>
+                <td><button class="show-btn" onclick="showDiagram('${data.id}', '${btoa(data.summary)}', '${data.diagram}')">Show</button></td>
+                <td><button class="remove-btn" onclick="removeRow('${data.id}')">Remove</button></td>
+            `;
+            tableBody.appendChild(row);
+        }
+
+        function showDiagram(id, encodedSummary, encodedDiagram) {
+            const summary = atob(encodedSummary);
+            try {
+                const diagram = atob(encodedDiagram);
+                popupTitle.textContent = 'Execution Diagram';
+                popupContent.innerHTML = `<div class="mermaid-diagram">${diagram}</div>`;
+                
+                mermaid.initialize({ startOnLoad: false });
+                mermaid.run({ querySelector: '.mermaid-diagram' });
+
+                popup.style.width = '90%';
+                popup.style.maxWidth = '1200px';
+            } catch (e) {
+                console.error('Error decoding diagram:', e);
+                popupTitle.textContent = 'Execution Summary';
+                popupContent.textContent = summary;
+                popup.style.width = '';
+                popup.style.maxWidth = '';
+            }
+
+            popup.style.display = 'block';
+            overlay.style.display = 'block';
+        }
+
+        function closePopup() {
+            popup.style.display = 'none';
+            overlay.style.display = 'none';
+            popup.style.width = '';
+            popup.style.maxWidth = '';
+            popupContent.innerHTML = '';
+        }
+
+        function removeRow(id) {
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            if (row) {
+                row.remove();
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ id: id, action: 'remove' }));
+                }
+            }
+        }
+
+        // Initial WebSocket connection
+        connectWebSocket();
+    </script>
+</body>
+</html>

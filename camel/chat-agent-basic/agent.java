@@ -62,6 +62,8 @@ public class agent extends RouteBuilder {
             // .modelName("qwen2.5:14b-instruct")
             // .modelName("granite3.2:2b")
             // .modelName("granite3.2:8b")
+            // .modelName("qwen3:8b")
+            // .modelName("qwen3:4b")
             .baseUrl("http://"+getLlmUrl()+"/v1/")
             .temperature(0.0)
             .timeout(ofSeconds(180))
@@ -95,6 +97,8 @@ public class agent extends RouteBuilder {
                 //     """;
 
                     String systemMessage = """
+                        /no_think
+
                         You are a helpul customer support assistant.
     
                         You will assist in handling operations related to invoices, promotions, notifications.
