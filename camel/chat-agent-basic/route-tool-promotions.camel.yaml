@@ -8,7 +8,7 @@
         user: camel
       type: org.postgresql.ds.PGSimpleDataSource
 - route:
-    id: route-1612
+    id: get-promotions
     description: get promotions
     from:
       uri: langchain4j-tools
@@ -31,7 +31,7 @@
         - log:
             message: ${body}
 - route:
-    id: route-3070
+    id: award-promotion
     description: award promotion
     from:
       uri: langchain4j-tools
@@ -58,20 +58,16 @@
                 expression: ${header.invoiceid}
             name: invoiceid
         - to:
-            description: get promotion details
-            uri: sql
+            description: get-promotion-data
+            uri: direct
             parameters:
-              dataSource: "#PostgresqlDataSource"
-              query: SELECT id, type,description,quantity,discount FROM promotions WHERE id =
-                CAST(:#promotionid AS INTEGER);
-        - marshal:
-            json: {}
-            variableReceive: promotion-details
-        - log:
-            id: log-2364
-            message: "promotions: ${body}, length: ${body.size}"
+              name: get-promotion-data
+        - to:
+            description: get-customer-data
+            uri: direct
+            parameters:
+              name: get-customer-data
         - choice:
-            id: choice-1855
             otherwise:
               steps:
                 - to:
@@ -80,11 +76,10 @@
                     parameters:
                       name: process-award
             when:
-              - id: when-2202
-                description: when no data
+              - description: when no promotions
                 steps:
                   - setBody:
-                      id: setBody-4141
+                      description: set error
                       expression:
                         simple:
                           expression: >-
@@ -94,7 +89,21 @@
                             }
                 expression:
                   simple:
-                    expression: ${body.size} == 0
+                    expression: ${jq(variable:promotion-details,length)} == 0
+              - description: when no customer data
+                steps:
+                  - setBody:
+                      description: set error
+                      expression:
+                        simple:
+                          expression: >-
+                            {
+                              "status":"error",
+                              "details":"The invoice ID provided does not exist. Use an existing invoice ID and try again."
+                            }
+                expression:
+                  simple:
+                    expression: ${jq(variable:customer-details,length)} == 0
 - route:
     id: process-award
     from:
@@ -102,11 +111,6 @@
       parameters:
         name: process-award
       steps:
-        - to:
-            id: to-1345
-            uri: direct
-            parameters:
-              name: get-customer-data
         - to:
             id: to-1274
             uri: direct
@@ -183,6 +187,27 @@
               secretKey: minio123
               uriEndpointOverride: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
 - route:
+    id: get-promotion-data
+    from:
+      id: get-promotion-data
+      uri: direct
+      parameters:
+        name: get-promotion-data
+      steps:
+        - to:
+            description: get promotion details
+            uri: sql
+            parameters:
+              dataSource: "#PostgresqlDataSource"
+              query: SELECT id, type,description,quantity,discount FROM promotions WHERE id =
+                CAST(:#promotionid AS INTEGER);
+        - marshal:
+            json: {}
+            variableReceive: promotion-details
+        - log:
+            message: "promotion details: ${variable.promotion-details}, length:
+              ${jq(variable:promotion-details,length)}"
+- route:
     id: get-customer-data
     from:
       id: get-customer-data
@@ -201,8 +226,10 @@
             json: {}
             variableReceive: customer-details
         - log:
-            disabled: true
-            message: Query result:${body} InvoiceId:${variable.invoiceid}
+            disabled: false
+            message: "Query result:${body} InvoiceId:${variable.invoiceid}, details:
+              ${variable.customer-details}, length:
+              ${jq(variable:customer-details,length)}"
 - route:
     id: apply-reward
     from:

@@ -5,6 +5,17 @@ INGESTION
 
 - Show Kaoto process and Data Mapper
 
+            <Seller>
+                <Name>
+                    <xsl:value-of select="/X12_850/Header/N1Loop[1]/N1/N1-02"/>
+                </Name>
+
+
+            <Client>
+                <Name>
+                    <xsl:value-of select="/X12_850/Header/N1Loop[2]/N1/N1-02"/>
+                </Name>
+
 
 - X12 -> Drop EDI file
   -> Look at invoice in S3
@@ -17,33 +28,45 @@ INGESTION
 Chat driven interaction
 -----------------------
 
-Please get me invoice 61356291
- LLM: (shows invoice)
+	Please get me invoice 61356291
+	 LLM: (shows invoice)
 
-There is a mistake in invoice 61356291, the customer has ordered 4 units of wine glasses, not 5, please fix it
- LLM: The invoice has been successfully amended. Quantity has been corrected from 4 to 2.
+	There is a mistake in invoice 61356291, the customer has ordered 4 units of wine glasses, not 5, please fix it
+	 LLM: The invoice has been successfully amended. Quantity has been corrected from 4 to 2.
 
-Show me invoice 61356291
- LLM: (shows ammended invoice)
+	Show me invoice 61356291
+	 LLM: (shows ammended invoice)
 
-Please get me id and details about the current active promotions we have
- LLM: Current active promotions:
- - ID: 100, Type: Vouchers, Description: Wine related products
- - ID: 101, Type: Loyalty, Description: Loyalty points
- - ID: 102, Type: Two-for-One, Description: Buy 1 book, get 1 free
+	Please get me id and details about the current active promotions we have
+	 LLM: Current active promotions:
+	 - ID: 100, Type: Vouchers, Description: Wine related products
+	 - ID: 101, Type: Loyalty, Description: Loyalty points
+	 - ID: 102, Type: Two-for-One, Description: Buy 1 book, get 1 free
 
-Please apply promotion 100 to the customer in invoice 61356291
- LLM: Promotion 100 has been applied to the customer in invoice 61356291.
 
-In fact, please find me customers interested in wine products
- LLM: Here are the customer IDs interested in wine products: 61356291, 49565075, 34911755, 54212825, 67095041.
- 
-Please reward customers of invoices 61356291, 49565075, 34911755, 54212825 with promotion 1
- LLM: All promotions have been successfully awarded.
+==> Show at this point Kaoto:
+	- Show Agent's code
+		> get promotions Tool
+
+
+	Please apply promotion 100 to the customer in invoice 61356291
+	 LLM: Promotion 100 has been applied to the customer in invoice 61356291.
+
+	In fact, please find me customers interested in wine products
+	 LLM: Here are the customer IDs interested in wine products: 61356291, 49565075, 34911755, 54212825, 67095041.
+	 
+	Please reward customers of invoices 61356291, 49565075, 34911755, 54212825 with promotion 1
+	 LLM: All promotions have been successfully awarded.
 
 
 Planned Execution
 -----------------
 
 There is a mistake in invoice 67095041, the tax applied is incorrect, it should be 5 percent instead of 10, please fix it. Also, please find the current promotions programs available, and award a promotion to the customer related to wine products. Actually, apply the same promotion to all customers interested in wine.
+
+
+Human in the Loop
+-----------------
+
+
 

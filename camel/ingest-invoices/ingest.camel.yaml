@@ -24,20 +24,11 @@
         - to:
             uri: direct
             parameters:
-              name: to-vector-db-old
-            disabled: true
-
-
-        - to:
-            uri: direct
-            parameters:
               name: docling-to-invoice-json
         - to:
             uri: direct
             parameters:
               name: prepare-data
-
-
         - to:
             uri: direct
             parameters:
@@ -192,14 +183,14 @@
             expression:
               jq:
                 expression: >-
-                  .Seller.Name
+                  .Client.Name
                 resultType: java.lang.String
             name: name
         - setVariable:
             expression:
               jq:
                 expression: >-
-                  .Seller.Name
+                  .Client.Name
                   | [match("[a-zA-Z]+"; "g") | .string] 
                   | (.[0] + "@" + .[0] + "-" + .[1] + ".com")
                 resultType: java.lang.String
@@ -277,144 +268,6 @@
             message: ${body}
 
 
-
-
-- route:
-    id: insert in Vector DB (old)
-    from:
-      uri: direct
-      parameters:
-        name: to-vector-db-old
-      steps:
-        - setVariable:
-            expression:
-              jq:
-                expression: '.texts[0].text | split(": ") | .[1]'
-                resultType: java.lang.String
-            name: invoice
-        - setVariable:
-            expression:
-              jq:
-                # expression: '.texts[7].text | split(": ") | .[1]'
-                # expression: '.texts[(.texts | to_entries | .[] | select(.value.text == "Seller:") | .key)+3].text | split(": ") | .[1]'
-                expression: |-
-                  .texts
-                  | (map(.text | startswith("Seller:")) | index(true)) as $seller_idx
-                  | .[$seller_idx+1:]  
-                  | (map(.text | startswith("IBAN:")) | index(true)) as $iban_idx
-                  | .[$iban_idx].text | split(": ") | .[1]
-            name: iban
-        - setVariable:
-            expression:
-              jq:
-                # expression: '.texts[12].text | split(": ") | .[1]'
-                expression: |-
-                  .texts
-                  | (map(.text | startswith("Client:")) | index(true)) as $seller_idx
-                  | .[$seller_idx+1:]  
-                  | (map(.text | startswith("Tax Id:")) | index(true)) as $iban_idx
-                  | .[$iban_idx].text | split(": ") | .[1]
-                resultType: java.lang.String
-            name: taxid
-        - setVariable:
-            expression:
-              jq:
-                # expression: |-
-                #   .texts[11].text 
-                #   | capture("^(?<tokens>[^0-9]+)\\s*\\d") 
-                #   | .tokens 
-                #   | rtrimstr(" ")
-                expression: |-
-                  .texts[(.texts | to_entries | .[] | select(.value.text == "Client:") | .key)+1].text 
-                  | capture("^(?<tokens>[^0-9]+)\\s*\\d") 
-                  | .tokens 
-                  | rtrimstr(" ")
-                resultType: java.lang.String
-            name: name
-        - setVariable:
-            expression:
-              jq:
-                # expression: |-
-                #   .texts[11].text 
-                #   | [match("[a-zA-Z]+"; "g") | .string] 
-                #   | (.[0] + "@" + .[0] + "-" + .[1] + ".com")
-                expression: |-
-                  .texts[(.texts | to_entries | .[] | select(.value.text == "Client:") | .key)+1].text 
-                  | [match("[a-zA-Z]+"; "g") | .string] 
-                  | (.[0] + "@" + .[0] + "-" + .[1] + ".com")
-                resultType: java.lang.String
-            name: email
-        - log:
-            message: "name: ${variable.name}, email: ${variable.email}"
-        - split:
-            id: split-1561
-            steps:
-              - setBody:
-                  expression:
-                    jq:
-                      expression: .[1].text + "\\n" | sub("\""; "\\\""; "g")
-              - filter:
-                  steps:
-                    - setBody:
-                        id: setBody-1994
-                        expression:
-                          simple: {}
-                  disabled: false
-                  expression:
-                    simple:
-                      expression: ${exchangeProperty.CamelSplitIndex} == 0
-            aggregationStrategy: "#myaggregator"
-            expression:
-              jq:
-                expression: .tables[0].data.grid
-            parallelProcessing: false
-        - to:
-            uri: langchain4j-embeddings:test?embeddingModel=#class:dev.langchain4j.model.embedding.AllMiniLmL6V2EmbeddingModel
-        - setVariable:
-            expression:
-              simple:
-                expression: ${header.CamelLangChain4jEmbeddingsVector}
-                resultType: dev.langchain4j.data.embedding.Embedding
-            name: vector
-        - setHeaders:
-            headers:
-              - expression:
-                  constant:
-                    expression: Bearer root:Milvus
-                name: Authorization
-              - expression:
-                  constant:
-                    expression: application/json
-                name: Content-Type
-        - setBody:
-            id: setBody-8950
-            expression:
-              simple:
-                expression: |-
-                  {
-                      "collectionName": "mycollection",
-                      "data": [{
-                          "iban": "${variable.iban}",
-                          "invoice": ${variable.invoice},
-                          "text": "${body}",
-                          "pdf": "${variable.db-invoice-url}",
-                          "vector": ${variable.vector.vectorAsList()},
-                          "metadata": {
-                                 "product_info": {"category": null, "brand": "BrandB"},
-                                 "price": 59.99,
-                                 "in_stock": null
-                           }
-                      }]
-                  }
-        - log:
-            disabled: true
-            message: ${body}
-        - to:
-            uri: https
-            parameters:
-              httpUri: https://milvus-milvus.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com/v2/vectordb/entities/insert
-        - log:
-            message: ${body}
 - beans:
     - name: myaggregator
       type: org.apache.camel.processor.aggregate.StringAggregationStrategy
