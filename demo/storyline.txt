@@ -28,6 +28,10 @@ INGESTION
 Chat driven interaction
 -----------------------
 
+==> Make sure to drop full invoice collection.
+    (saves demo time)
+    
+
 	Please get me invoice 61356291
 	 LLM: (shows invoice)
 

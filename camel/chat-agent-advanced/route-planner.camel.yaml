@@ -41,15 +41,6 @@
             id: bean-1006
             method: reset
             ref: logger
-        - setBody:
-            id: setBody-1565
-            disabled: true
-            expression:
-              simple:
-                expression: Find all the PDF documents from January 2024 to July. For each one
-                  of the documents extract the name and surname metadata, and
-                  then create an entry in the database using the metadata
-                  obtained.
         - to:
             id: to-2813
             uri: direct
@@ -58,10 +49,6 @@
         - choice:
             otherwise:
               steps:
-                - log:
-                    id: log-1426
-                    disabled: true
-                    message: only 1 action
                 - setHeader:
                     id: setHeader-2442
                     expression:
@@ -237,16 +224,6 @@
               - id: when-2677
                 steps:
                   - setBody:
-                      id: setBody-2691
-                      disabled: true
-                      expression:
-                        simple:
-                          expression: |-
-                            ${body}
-
-                            inputs:
-                            ${variable.output-${variable.deps}}
-                  - setBody:
                       id: setBody-3759
                       expression:
                         simple:
@@ -271,17 +248,6 @@
             uri: direct
             parameters:
               name: call-agent
-        - process:
-            description: AI message
-            disabled: true
-            ref: createToolMessage
-        - to:
-            id: to-1180
-            uri: langchain4j-tools
-            parameters:
-              tags: orchestrator
-              toolId: runstep
-            disabled: true
         - setVariable:
             id: setVariable-8543
             expression:
