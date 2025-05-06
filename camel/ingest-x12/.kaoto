@@ -14,21 +14,5 @@
 			]
 		},
 		"xsltPath": "kaoto-datamapper-e6fb3e6b.xsl"
-	},
-	"kaoto-datamapper-2696c649": {
-		"sourceBody": {
-			"type": "XML Schema",
-			"filePath": [
-				"850.xsd"
-			]
-		},
-		"sourceParameters": {},
-		"targetBody": {
-			"type": "XML Schema",
-			"filePath": [
-				"X12-850.dfdl.xsd"
-			]
-		},
-		"xsltPath": "kaoto-datamapper-2696c649.xsl"
 	}
 }

@@ -157,7 +157,7 @@
         - to:
             uri: https
             parameters:
-              httpUri: milvus-milvus.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com/v2/vectordb/entities/get
+              httpUri: milvus-milvus.{{remote.host.domain}}/v2/vectordb/entities/get
             disabled: false
         - setVariable:
             expression:
@@ -213,7 +213,7 @@
         - to:
             uri: https
             parameters:
-              httpUri: https://milvus-milvus.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com/v2/vectordb/entities/upsert
+              httpUri: https://milvus-milvus.{{remote.host.domain}}/v2/vectordb/entities/upsert
             disabled: false
         - log:
             message: "Milvus update: ${body}"
@@ -288,7 +288,7 @@
               overrideEndpoint: true
               region: ap-south-2
               secretKey: minio123
-              uriEndpointOverride: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+              uriEndpointOverride: https://minio-api-demo.{{remote.host.domain}}
         - setHeader:
             expression:
               simple:
@@ -300,7 +300,7 @@
               accessKey: minio
               autoCreateBucket: false
               bucketName: invoices
-              endpoint: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+              endpoint: https://minio-api-demo.{{remote.host.domain}}
               keyName: ${variable.filename}
               operation: createDownloadLink
               secretKey: minio123

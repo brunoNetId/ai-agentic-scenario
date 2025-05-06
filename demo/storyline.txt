@@ -1,36 +1,49 @@
+PREPARATION
+-----------
+- Empty buckets & data
+- Reset Name fields in Data Mapper
+- Open the tunnel (port-forward)
+- Ensure models are loaded
+- Dashboards loaded
+- Agents down
+
+
 INGESTION
 ---------
 
-- Show slides
+	- Show slides
 
-- Show Kaoto process and Data Mapper
-
-            <Seller>
-                <Name>
-                    <xsl:value-of select="/X12_850/Header/N1Loop[1]/N1/N1-02"/>
-                </Name>
+	- Show Kaoto process and Data Mapper
 
 
-            <Client>
-                <Name>
-                    <xsl:value-of select="/X12_850/Header/N1Loop[2]/N1/N1-02"/>
-                </Name>
+==> Make mapping changes LIVE
+
+	            <Seller>
+	                <Name>
+	                    <xsl:value-of select="/X12_850/Header/N1Loop[1]/N1/N1-02"/>
+	                </Name>
 
 
-- X12 -> Drop EDI file
-  -> Look at invoice in S3
-  -> Look at Milvus / DB /
+	            <Client>
+	                <Name>
+	                    <xsl:value-of select="/X12_850/Header/N1Loop[2]/N1/N1-02"/>
+	                </Name>
 
-- Invoices -> Drop invoices
-  -> Check Bucket to see them ingested
+
+	- X12 -> Drop EDI file
+	  -> Look at invoice in S3
+	  -> Look at Milvus / DB /
+
+	- Invoices -> Drop invoices
+	  -> Check Bucket to see them ingested
 
 
 Chat driven interaction
 -----------------------
 
-==> Make sure to drop full invoice collection.
+==> Drop full invoice collection.
     (saves demo time)
-    
+
 
 	Please get me invoice 61356291
 	 LLM: (shows invoice)
@@ -55,6 +68,10 @@ Chat driven interaction
 
 	Please apply promotion 100 to the customer in invoice 61356291
 	 LLM: Promotion 100 has been applied to the customer in invoice 61356291.
+
+
+==> Show the email out to the customer
+
 
 	In fact, please find me customers interested in wine products
 	 LLM: Here are the customer IDs interested in wine products: 61356291, 49565075, 34911755, 54212825, 67095041.

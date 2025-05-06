@@ -200,6 +200,12 @@
                   message: |-
                     graph:
                     ${body}
+              - setBody:
+                  expression:
+                    simple:
+                      expression: ${body.replaceAll('(?s)<think>.*</think>','').trim()}
+              - log:
+                  message: "Graph (no think section): ${body}"
               - process:
                   id: process-9943
                   ref: findInvoiceId

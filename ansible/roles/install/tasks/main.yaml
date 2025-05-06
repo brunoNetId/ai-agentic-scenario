@@ -59,6 +59,38 @@
     msg: "Setting up for OpenShift version: {{ openshift_version }}"
 
 
+#================= Define properties file with subdomain
+
+- name: Gather facts for localhost
+  ansible.builtin.setup:
+  delegate_to: localhost
+
+- name: Check if local file exists
+  ansible.builtin.stat:
+    path: "../config/domain.properties"
+  delegate_to: localhost
+  register: file_stat
+
+- name: Generate unique filename for existing file
+  ansible.builtin.set_fact:
+    new_filename: "../config/domain.properties.{{ ansible_date_time.epoch }}.backup"
+  when: file_stat.stat.exists
+
+- name: Rename existing local file to unique name
+  ansible.builtin.command:
+    cmd: "mv ../config/domain.properties {{ new_filename }}"
+    creates: "{{ new_filename }}"
+  delegate_to: localhost
+  when: file_stat.stat.exists
+
+- name: Create local file with property value
+  ansible.builtin.copy:
+    content: "remote.host.domain={{ route_subdomain }}"
+    dest: "../config/domain.properties"
+  delegate_to: localhost
+
+#=======================================================
+
 
 - name: Evaluate Full Deployment
   include_tasks: main_all.yaml

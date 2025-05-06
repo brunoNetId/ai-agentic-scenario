@@ -48,6 +48,10 @@ public class graph extends RouteBuilder {
             // .modelName("qwen2.5:3b-instruct")
             // .modelName("qwen2.5:7b-instruct")
             .modelName("qwen2.5:14b-instruct")
+            
+            // Qwen3 (4b,8b,14b) does not seem to perform better than 2.5-instruct for Mermaid
+            // .modelName("qwen3:8b")
+
             // .baseUrl("http://"+getLlmUrl()+"/v1/")
             .baseUrl("http://"+getLlmUrl()+"/v1/")
             .temperature(0.0)
@@ -70,6 +74,8 @@ public class graph extends RouteBuilder {
 
 
                 String systemMessage = """
+                    /no_think
+
                     You are an assistant to help create Mermaid flow charts.
 
                     You will be given one or more arrays of JSON, like [0] [1] ... [N]
@@ -154,6 +160,7 @@ public class graph extends RouteBuilder {
                         B --> C[End]
 
                     Respond with the raw Mermaid code.
+                    Do not include the Markdown notation wrapper with backticks.
                     """;
 
 

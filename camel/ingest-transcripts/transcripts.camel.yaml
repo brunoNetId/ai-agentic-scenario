@@ -75,7 +75,7 @@
             parameters:
               accessKey: minio
               bucketName: generated
-              endpoint: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+              endpoint: https://minio-api-demo.{{remote.host.domain}}
               keyName: ${variable.filename}_${date:now:HH-mm-ss}.txt
               secretKey: minio123
             disabled: true
@@ -85,7 +85,7 @@
             parameters:
               accessKey: minio
               bucketName: generated
-              endpoint: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+              endpoint: https://minio-api-demo.{{remote.host.domain}}
               keyName: ${variable.filename}summary_${date:now:HH-mm-ss}.txt
               secretKey: minio123
             disabled: true
@@ -173,7 +173,7 @@
         overrideEndpoint: true
         region: ap-south-2
         secretKey: minio123
-        uriEndpointOverride: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+        uriEndpointOverride: https://minio-api-demo.{{remote.host.domain}}
       steps:
         - log:
             id: log-2491

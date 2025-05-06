@@ -65,7 +65,7 @@
             id: to-2928
             uri: https
             parameters:
-              httpUri: milvus-milvus.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com/v2/vectordb/entities/search
+              httpUri: milvus-milvus.{{remote.host.domain}}/v2/vectordb/entities/search
             disabled: false
         - log: ${body}
         - choice:
@@ -134,7 +134,7 @@
         - to:
             uri: https
             parameters:
-              httpUri: "{{milvus.uri}}/v2/vectordb/entities/get"
+              httpUri: milvus-milvus.{{remote.host.domain}}/v2/vectordb/entities/get
         - setBody:
             id: setBody-9739
             expression:

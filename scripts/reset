@@ -1,7 +1,12 @@
 #! /bin/bash
 
 NS_DEMO=demo
-MILVUS="https://milvus-milvus.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com"
+# DOMAIN=apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+# DOMAIN=apps.cluster-tbwv6.tbwv6.sandbox342.opentlc.com
+DOMAIN=$(grep '^remote\.host\.domain=' ../config/domain.properties | cut -d'=' -f2)
+DOMAIN_PROPERTY_FILE=../config/domain.properties
+
+MILVUS="https://milvus-milvus.$DOMAIN"
 TOKEN="root:Milvus"
 
 
@@ -14,12 +19,12 @@ DB_DELETE_INVOICES="oc exec svc/postgresql -n $NS_DEMO -- psql -d demo -c 'delet
 DB_DELETE_PROMOTIONS="oc exec svc/postgresql -n $NS_DEMO -- psql -d demo -c 'delete from promotions;'"
 DB_DELETE_AWARDS="oc exec svc/postgresql -n $NS_DEMO -- psql -d demo -c 'delete from awards;'"
 
-CAMEL_START_CLEAN_BUCKETS="camel run --background resources/cleanbuckets.camel.yaml"
+CAMEL_START_CLEAN_BUCKETS="camel run --background resources/cleanbuckets.camel.yaml $DOMAIN_PROPERTY_FILE"
 CAMEL_STOP_CLEAN_BUCKETS="camel stop cleanbuckets"
-CAMEL_START_RESET_BUCKETS="camel run --background resources/resetbuckets.camel.yaml"
+CAMEL_START_RESET_BUCKETS="camel run --background resources/resetbuckets.camel.yaml $DOMAIN_PROPERTY_FILE"
 CAMEL_STOP_RESET_BUCKETS="camel stop resetbuckets"
 
-CAMEL_START_INGEST="camel run --background --source-dir=../camel/ingest-invoices --dep=dev.langchain4j:langchain4j-embeddings-all-minilm-l6-v2:0.32.0"
+CAMEL_START_INGEST="camel run --background --source-dir=../camel/ingest-invoices --properties=$DOMAIN_PROPERTY_FILE --dep=dev.langchain4j:langchain4j-embeddings-all-minilm-l6-v2:0.32.0"
 CAMEL_STOP_INGEST="camel stop ingest"
 
 

@@ -37,4 +37,4 @@
               overrideEndpoint: true
               region: ap-south-2
               secretKey: minio123
-              uriEndpointOverride: https://minio-api-demo.apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
+              uriEndpointOverride: https://minio-api-demo.{{remote.host.domain}}
