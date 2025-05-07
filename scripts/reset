@@ -1,14 +1,11 @@
 #! /bin/bash
 
 NS_DEMO=demo
-# DOMAIN=apps.cluster-8lqf8.8lqf8.sandbox2778.opentlc.com
-# DOMAIN=apps.cluster-tbwv6.tbwv6.sandbox342.opentlc.com
 DOMAIN=$(grep '^remote\.host\.domain=' ../config/domain.properties | cut -d'=' -f2)
 DOMAIN_PROPERTY_FILE=../config/domain.properties
 
 MILVUS="https://milvus-milvus.$DOMAIN"
 TOKEN="root:Milvus"
-
 
 DBPOD=`oc get pod --selector=name=postgresql -o name -n $NS_DEMO`
 # echo $DBPOD

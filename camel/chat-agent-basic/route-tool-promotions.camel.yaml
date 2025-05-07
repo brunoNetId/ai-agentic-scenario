@@ -26,10 +26,11 @@
         - setBody:
             expression:
               simple:
-                expression: "{\"howto\":\"Use the pattern 'id: description'\", \"result\":
-                  ${body}}"
-        - log:
-            message: ${body}
+                expression: |-
+                  {
+                      "howto":"Use the pattern 'id: description'", 
+                      "result": ${body}
+                  }
 - route:
     id: award-promotion
     description: award promotion

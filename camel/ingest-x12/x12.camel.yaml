@@ -26,20 +26,20 @@
 - route:
     id: process-x12
     from:
-      uri: direct:process-x12
+      description: start
+      uri: direct
+      parameters:
+        name: process-x12
       steps:
-        - log:
-            message: "raw input EDI: ${body}"
         - unmarshal:
             dfdl:
               schemaUri: X12-850.dfdl.xsd
         - setVariable:
+            description: keep x12
             expression:
               simple:
                 expression: ${body}
             name: x12
-        - log:
-            message: "XML EDI: ${body}"
         - step:
             id: kaoto-datamapper-e6fb3e6b
             steps:
@@ -47,28 +47,26 @@
                   id: kaoto-datamapper-xslt-3598
                   uri: xslt-saxon:kaoto-datamapper-e6fb3e6b.xsl
                   parameters: {}
-        - log:
-            message: Transformed XML ${body}
         - setVariable:
             id: setVariable-1059
+            description: get invoiceid
             name: invoiceid
             xpath:
               expression: /Invoice/InvoiceNumber/text()
-        - log:
-            message: InvoiceID:${variable.invoiceid}
         - to:
-            uri: xslt-saxon:template-pdf.xsl
-        - log:
-            message: "HTML to PDF: ${body}"
+            description: Template PDF
+            uri: xslt-saxon
+            parameters:
+              resourceUri: template-pdf.xsl
         - process:
+            description: generate PDF
             ref: InvoiceToPDF
         - setVariable:
+            description: set file name
             expression:
               simple:
                 expression: invoice_${variable.invoiceid}.pdf
             name: filename
-        - log:
-            message: "file key: ${variable.filename}"
         - removeHeaders:
             disabled: false
             pattern: "*"
