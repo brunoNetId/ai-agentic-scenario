@@ -1,13 +1,13 @@
 # **Project Under Construction**
-=====================================
 
-This project is currently in development. Please check back later for updates.
+> [!WARNING]  
+> This project is currently under development. Please check periodically for changes.
 
 
 
 # Demo: Multi-Agent AI with Apache Camel and Kaoto
 
-This demo will show you the super powers of combining LLMs and Apache Camel to create tools that allow users to use natural language to fetch information to backend systems.
+This demo will show you the super powers of combining LLMs and Apache Camel to create processes and tools tools that allow users to use natural language translated into actions against backend systems.
 
 ## Tested with
 
@@ -17,7 +17,11 @@ This demo will show you the super powers of combining LLMs and Apache Camel to c
 
 ## Deployment instructions
 
-### 2. Provision an OpenShift environment
+The demo is designed to operate across two connected environments: your local machine, where Camel and LLMs run, and a remote environment hosting all other dependencies. For the best experience, follow the guidelines below to automatically provision the required systems on OpenShift, then run Camel and the LLMs locally.
+
+<br/>
+
+### 1. Provision an OpenShift environment
 
 1. Provision the following RHDP item:
     * [**Red Hat OpenShift Container Platform Cluster (AWS)**](https://demo.redhat.com/catalog?item=babylon-catalog-prod/sandboxes-gpte.ocp-wksp.prod&utm_source=webapp&utm_medium=share-link)
@@ -42,13 +46,13 @@ The instructions below assume:
 1. Clone this GitHub repository:
 
     ```sh
-    git clone https://github.com/brunoNetId/workshop-camel-llm-tools.git
+    git clone https://github.com/brunoNetId/ai-agentic-scenario.git
     ```
 
 1. Change to root directory of the project.
 
     ```sh
-    cd workshop-camel-llm-tools
+    cd ai-agentic-scenario
     ```
 
     <br/>
@@ -121,3 +125,13 @@ If you wish to undeploy the demo, use the same commands as above, but with:
 
 Instead of:
  - ~~`./install.yaml`~~
+
+
+<br/>
+
+### 4. Undeploy the Workshop
+
+> [!WARNING]  
+> The demo documentation is pending to be improved.
+
+Find more instructions on how to run the demo under the `docs` folder.

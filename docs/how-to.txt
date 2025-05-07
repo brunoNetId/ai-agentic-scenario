@@ -1,0 +1,70 @@
+How to run the demo:
+====================
+
+Follow the main guidelines to provision an OpenShift environment and deploy all the required systems.
+
+Then, you need to run your LLMs somewhere where you can benefit from enough GPU power.
+We recommend a powerful laptop.
+
+The demo was created running Camel and the LLMs locally.
+
+- All Camel instances run with Camel JBang
+- LLMs run with Ollama running locally.
+
+
+
+Configuration:
+--------------
+When the ansible scripts provision the environment, it also auto-configures Camel and the scripts by generating the following resource:
+
+ - config/domain.properties
+
+The configuration file is used by Camel and the start/stop/reset scripts.
+
+Camel uses a number of apps for the demo, running on different ports to avoid clashes, these are documented in:
+
+ - camel/ports.txt
+
+
+Demo preparations
+-----------------
+
+When all the systems are running in OpenShift, you need to make sure you have a tunnel open to allow Camel to comunicate with PostgreSQL. You can open the tunner by issuing the following CLI command:
+
+ > oc port-forward svc/postgresql 5432 -n demo
+
+You'll need Browser tabs for the following UIs:
+ 
+ - Milvus (Vector Database): you'll find the UI under "milvus" namespace.
+   Use the credentials "root:Milvus" to connect to the database
+
+ - Filestash (S3 explorer): you'll find it under the "filestash" namespace.
+   Use the following connection parameters to connect:
+    - User Key: minio
+    - Access Key: minio123
+    - Endpoint: Minio's API route URL
+
+Drop invoices into the "ingest" S3 bucket. Find sample invoices under the "demo/invoices" folder
+
+
+Start the Camel applications
+----------------------------
+From a terminal, change directory to the "scripts" folder.
+Then issue the command:
+
+ > ./agents-up
+
+Camel will start and consume the invoices from the S3 bucket.
+
+To stop the Camel applications, issue the command:
+
+ > ./agents-down
+
+
+Reset the demo
+--------------
+If you want to run the demo multiple times, you can reset the initial conditions by issuing the command:
+
+ > ./reset
+
+The command will stop any running Camel application (belonging to this project) and delete data from the remote systems (S3, DB, VectorDB)

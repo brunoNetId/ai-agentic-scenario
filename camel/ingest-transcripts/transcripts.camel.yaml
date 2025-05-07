@@ -90,18 +90,18 @@
               secretKey: minio123
             disabled: true
             variableSend: summary
-- route:
-    id: route-1543
-    from:
-      id: from-1127
-      uri: timer
-      parameters:
-        period: "1000"
-        repeatCount: "1"
-        timerName: template
-      steps:
-        - stop:
-            id: stop-1547
+# - route:
+#     id: route-1543
+#     from:
+#       id: from-1127
+#       uri: timer
+#       parameters:
+#         period: "1000"
+#         repeatCount: "1"
+#         timerName: template
+#       steps:
+#         - stop:
+#             id: stop-1547
 - route:
     id: to-admin
     from:

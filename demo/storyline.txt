@@ -7,6 +7,8 @@ PREPARATION
 - Dashboards loaded
 - Agents down
 - Ensure your OCP login is fresh (console & terminal)
+> OCP Console ready on PSQL
+> Milvus UI ready on Data
 
 
 DEMO START
