@@ -1,0 +1,127 @@
+- beans:
+    - name: myaggregator
+      type: org.apache.camel.processor.aggregate.StringAggregationStrategy
+
+
+- route:
+    id: generate
+    from:
+      id: generate
+      uri: direct
+      parameters:
+        name: generate
+      steps:
+        - log:
+            id: log-3262
+            message: ${body}
+        - process:
+            id: process-3957
+            ref: createSummary
+        - to:
+            id: to-3111
+            uri: langchain4j-tools
+            parameters:
+              tags: all
+              toolId: summary
+            disabled: false
+            variableReceive: summary
+        - setVariable:
+            id: setVariable-1122
+            expression:
+              jq:
+                expression: . + {"status":"pending"}
+                source: variable:summary
+            name: summary
+        - log:
+            id: log-5080
+            message: "summary is: ${variable.summary}"
+
+
+
+- route:
+    id: to-admin
+    from:
+      uri: direct
+      parameters:
+        name: to-admin
+      steps:
+        - to:
+            id: to-4267
+            uri: direct
+            parameters:
+              name: generate
+        - removeHeaders:
+            pattern: "*"
+        - setBody:
+            expression:
+              simple:
+                expression: ${variable.summary}
+        - to:
+            uri: http
+            parameters:
+              httpUri: localhost:8100/dashboard/send
+
+
+- route:
+    id: call-agent
+    from:
+      id: from-1080
+      uri: direct
+      parameters:
+        name: call-agent
+      steps:
+        - to:
+            id: to-2685
+            uri: http
+            parameters:
+              httpUri: localhost:8080/camel/chat
+
+
+- route:
+    id: tool-get-interests
+    description: tool-get-interests
+    from:
+      uri: langchain4j-tools
+      parameters:
+        description: extract from invoice categories of products customer is interested in
+        parameter.invoiceid: string
+        tags: all
+        toolId: interests
+      steps:
+        - setBody:
+            expression:
+              simple:
+                expression: please tell me the types of products in invoice ${header.invoiceid}
+        - to:
+            uri: direct
+            parameters:
+              name: call-agent
+        - log:
+            message: ${body}
+
+- route:
+    id: ingestor
+    from:
+      uri: aws2-s3
+      parameters:
+        accessKey: minio
+        bucketNameOrArn: transcripts
+        forcePathStyle: true
+        overrideEndpoint: true
+        region: ap-south-2
+        secretKey: minio123
+        uriEndpointOverride: https://minio-api-demo.{{remote.host.domain}}
+      steps:
+        - log:
+            id: log-2491
+            message: ${body}
+        - to:
+            id: to-1077
+            uri: direct
+            parameters:
+              name: to-admin
+            variableReceive: to-admin-result
+
+
+
+

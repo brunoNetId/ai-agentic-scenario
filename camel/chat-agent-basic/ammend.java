@@ -89,19 +89,6 @@ public class ammend extends RouteBuilder {
                 List<ChatMessage> messages = new ArrayList<>();
 
 
-                            // {
-                            //   "InvoiceNumber": identifier,
-                            //   "DateOfIssue": date,
-                            //   "Seller": {
-                            //   },
-                            //   "Client": {
-                            //   },
-                            //   "Items": [
-                            //   ],
-                            //   "Summary": {
-                            //   }
-                            // }
-
                 String systemMessage = """
                         You are an assistant to help fixing invoices.
     

@@ -75,10 +75,6 @@ public class planner extends RouteBuilder {
                 String payload = exchange.getMessage().getBody(String.class);
                 List<ChatMessage> messages = new ArrayList<>();
 
-                    // Note the comments in the parameter comments, as per the pattern above.
-
-
-    // More actions can be nested if the sentences are connected in meaning between each other.
                 String systemMessage = """
                     Please provide an execution plan.
                     When the content is simple enough, just define a single step.
@@ -211,23 +207,9 @@ public class planner extends RouteBuilder {
 
                     """;
 
-
-                    // Do not include field "actions" having an empty array like "actions":[]
-
-                    // Please discard ```json notations.
-
-                    // Unwrap the Markdown code block, the user is only interested in the raw data.
-
                 String user = payload;
 
-                // user = "Search for PDF documents from January 2024 to July. Tell me the temperature in London.";
-                // user = "Search for PDF documents from January 2024 to July.";
-                // user = "Find all the PDF documents from January 2024 to July. For each one of the documents extract the name and surname metadata, and then create an entry in the database using the metadata obtained.";
-                // user = "Find all the PDF documents from January 2024 to July. For each one of the documents extract the name and surname metadata";
-                // // user = "Find all the PDF documents from January 2024 to July.";
-
                 messages.add(new SystemMessage(systemMessage));
-                // messages.add(new UserMessage(payload));
                 messages.add(new UserMessage(user));
 
                 exchange.getIn().setBody(messages);
@@ -274,30 +256,6 @@ public class planner extends RouteBuilder {
                 List<ChatMessage> messages = new ArrayList<>();
 
 
-                // Don't use Markdown, use HTML instead. Use bullet points to display the summary. Make sure the bullet point is followed by text, not a new line.
-
-
-                // String systemMessage = """
-                //     You provide a summary of the plan execution.
-
-                //     Based on the inputs, create a summary of the requests processed and their results.
-                //     Don't use Markdown, use HTML instead. Use bullet points to display the summary, as follows:
-
-                //         <ul>
-                //             <li>bullet point</li>
-                //             <li>others</li>
-                //         </ul>
-
-                //     When a result contains an iframe with an invoice URL, please format into a foldable HTML entity, as follows:
-
-                //         <details>
-                //             <summary style="color:blue">Click to show PDF</summary>
-                //             <iframe>url</iframe>
-                //         </details>
-
-                //     The intention is to explain the user how his request has been attended and how the system proceeded to complete the tasks.
-                //     """;
-
                 String systemMessage = """
                     You provide a summary of the plan execution.
 
@@ -317,18 +275,14 @@ public class planner extends RouteBuilder {
                     The intention is to explain the user how his request has been attended and how the system proceeded to complete the tasks.
                     """;
 
-
                 String user = payload;
                 messages.add(new SystemMessage(systemMessage));
-                // messages.add(new UserMessage(payload));
                 messages.add(new UserMessage(user));
 
                 exchange.getIn().setBody(messages);
             }
         };
     }
-
-
 
     @BindToRegistry(lazy=true)
     public static Processor createAgentMessagePlanSummary(){
@@ -341,7 +295,6 @@ public class planner extends RouteBuilder {
 
                 String payload = exchange.getMessage().getBody(String.class);
                 List<ChatMessage> messages = new ArrayList<>();
-
 
                 String systemMessage = """
                     You provide a summary of the plan execution.
@@ -368,14 +321,6 @@ public class planner extends RouteBuilder {
 
                     Respond with raw JSON.
                     """;
-
-                    // The JSON payload above will be processed by JavaScript to produce an HTML summary so it's very important you produce JSON data that is HTML friendly.
-                    // Therefore, ensure rules like the ones that follow are taken in account:
-                    // - Do not include carriage return characters (\n), use nested structures instead.
-                    // - Do not include double quotes on the string values, nor escaped quote (\")
-                    // - Do not include other characters that may clash with JavaScript or HTML syntax.
-                    // - You can url encode strings containing not HTML friendly characters. 
-
 
                 String user = payload;
                 messages.add(new SystemMessage(systemMessage));

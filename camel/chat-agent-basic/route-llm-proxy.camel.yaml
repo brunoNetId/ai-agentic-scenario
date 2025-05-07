@@ -1,7 +1,7 @@
 - route:
-    id: route-8511
+    id: llm-proxy-main
     from:
-      id: from-9460
+      id: llm-proxy-main
       uri: netty-http
       parameters:
         bridgeEndpoint: true
@@ -19,9 +19,6 @@
               simple:
                 expression: ${body}
             name: toolcalls
-        - log:
-            disabled: true
-            message: "got LLM request: ${body}"
         - to:
             id: to-2165
             uri: netty-http
@@ -36,41 +33,19 @@
             when:
               - id: when-2735
                 steps:
-                  - log:
-                      id: log-4282
-                      disabled: true
-                      message: "final tool call summary: ${variable.toolcalls}"
                   - wireTap:
                       uri: direct:generate-mermaid
                       variableSend: toolcalls
                 expression:
                   jq:
                     expression: .choices[].finish_reason == "stop"
-        - setBody:
-            id: setBody-3557
-            disabled: true
-            expression:
-              jq:
-                expression: "."
-        - wireTap:
-            id: wireTap-1720
-            disabled: true
-            dynamicUri: false
-        - log:
-            id: log-2788
-            disabled: true
-            message: "got LLM response: ${body}"
 - route:
-    id: route-1823
+    id: generate-mermaid
     from:
       uri: direct
       parameters:
         name: generate-mermaid
       steps:
-        - convertBodyTo:
-            id: convertBodyTo-2320
-            disabled: true
-            type: String
         - transform:
             disabled: false
             expression:
@@ -99,13 +74,6 @@
                   steps:
                     - log:
                         message: "split: ${body}, alltools: ${variable.global:alltools}"
-                    - setProperty:
-                        id: setProperty-7007
-                        disabled: true
-                        expression:
-                          jq:
-                            expression: "."
-                        name: thebody
                     - setProperty:
                         disabled: false
                         expression:
@@ -233,284 +201,3 @@
               constant:
                 expression: "true"
             eagerCheckCompletion: true
-- route:
-    id: route-3392
-    from:
-      id: from-3199
-      uri: timer
-      parameters:
-        period: "1000"
-        repeatCount: "1"
-        timerName: template
-      steps:
-        - setBody:
-            id: setBody-3510
-            expression:
-              simple:
-                expression: >-
-                  ---
-
-                  config:
-                      flowchart:
-                          subGraphTitleMargin:
-                              bottom: 40
-                  ---
-
-                  graph LR
-                      A[Start] -- Step 0 --> B
-
-                      subgraph B[Amend invoice with given instructions to set the total amount to $80 for invoice ID 67095041.]
-                          direction TB
-                          B1[amendInvoiceWithGivenInstructions_call_0c827fgo: invoiceid: 67095041, message: Set total amount to $80.]
-                          B2[status: done]
-                          B1 --> B2
-                      end
-
-                      B -- Step 1 --> C
-
-                      subgraph C[Get active promotions.]
-                          direction TB
-                          C1[getActivePromotions_call_clqwvzz7: ]
-                          C2[howto: Use the pattern 'id: description', result.0.id: 100, result.0.type: vouchers, result.0.description: Wine related products, result.1.id: 101, result.1.type: loyalty, result.1.description: Loyalty points, result.2.id: 102, result.2.type: two-for-one, result.2.description: Buy 1 book, get 1 free]
-                          C1 --> C2
-                      end
-
-                      C -- Step 2 --> D
-
-                      subgraph D[Award a promotion to the customer based on their interest in Wines from the list of active promotions.]
-                          direction TB
-                          D1[awardsAPromotionToACustomer_call_rhdpkcj3: invoiceid: 67095041, promotionid: 100]
-                          D2[status: done]
-                          D1 --> D2
-                      end
-
-                      D --> E[End]
-        - process:
-            id: process-3304
-            ref: findInvoiceId
-        - log:
-            id: log-1236
-            message: "Diagram for invoiceid: ${variable.invoiceid}"
-        - stop:
-            id: stop-1800
-        - setBody:
-            id: setBody-2418
-            expression:
-              simple:
-                expression: >-
-                  [
-                    {
-                      "step": "0",
-                      "content": [
-                        {
-                          "role": "user",
-                          "content": "Amend invoice 67095041 with the correct tax rate of 15%"
-                        },
-                        {
-                          "role": "assistant",
-                          "content": null,
-                          "tool_calls": [
-                            {
-                              "id": "call_ywwktz01",
-                              "type": "function",
-                              "function": {
-                                "name": "amendInvoiceWithGivenInstructions",
-                                "arguments": "{\"invoiceid\":\"67095041\",\"message\":\"Corrected tax rate to 15%\"}"
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "role": "tool",
-                          "tool_call_id": "call_ywwktz01",
-                          "content": "{\"status\":\"done\"}"
-                        }
-                      ]
-                    },
-                    {
-                      "step": "1",
-                      "content": [
-                        {
-                          "role": "user",
-                          "content": "Get active promotions\n\ninputs:\n[ {\n  \"id\" : \"0\",\n  \"request\" : \"Amend invoice 67095041 with the correct tax rate of 15%\",\n  \"inputs\" : null,\n  \"result\" : \"Amendment complete. Tax rate for invoice 67095041 has been corrected to 15%.\"\n} ]"
-                        },
-                        {
-                          "role": "assistant",
-                          "content": null,
-                          "tool_calls": [
-                            {
-                              "id": "call_zaaarsso",
-                              "type": "function",
-                              "function": {
-                                "name": "getActivePromotions",
-                                "arguments": "{}"
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "role": "tool",
-                          "tool_call_id": "call_zaaarsso",
-                          "content": "{\"howto\":\"Use the pattern 'numeric ID: description'\", \"result\": [{\"id\":1,\"type\":\"vouchers\",\"description\":\"Wine related products\"},{\"id\":2,\"type\":\"loyalty\",\"description\":\"Loyalty points\"},{\"id\":3,\"type\":\"two-for-one\",\"description\":\"Buy 1 book, get 1 free\"}]}"
-                        }
-                      ]
-                    },
-                    {
-                      "step": "2",
-                      "content": [
-                        {
-                          "role": "user",
-                          "content": "Award a promotion to all customers interested in wine products\n\ninputs:\n[ {\n  \"id\" : \"0\",\n  \"request\" : \"Amend invoice 67095041 with the correct tax rate of 15%\",\n  \"inputs\" : null,\n  \"result\" : \"Amendment complete. Tax rate for invoice 67095041 has been corrected to 15%.\"\n}, {\n  \"id\" : \"1\",\n  \"request\" : \"Get active promotions\",\n  \"inputs\" : \"Amendment complete. Tax rate for invoice 67095041 has been corrected to 15%.\",\n  \"result\" : \"Active promotions:\\n1: Vouchers - Wine related products\\n2: Loyalty - Points\\n3: Two-for-One - Buy 1 book, get 1 free\"\n} ]"
-                        },
-                        {
-                          "role": "assistant",
-                          "content": null,
-                          "tool_calls": [
-                            {
-                              "id": "call_pg47kfxu",
-                              "type": "function",
-                              "function": {
-                                "name": "FindsCustomersInterestedInATypeOfProduct.ReturnsAListOfInvoiceIDs",
-                                "arguments": "{\"productType\":\"wine\"}"
-                              }
-                            },
-                            {
-                              "id": "call_s6kj0jte",
-                              "type": "function",
-                              "function": {
-                                "name": "awardsAPromotionToACustomer",
-                                "arguments": "{\"invoiceid\":67095041,\"promotionid\":1}"
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "role": "tool",
-                          "tool_call_id": "call_pg47kfxu",
-                          "content": "[61356291, 49565075, 34911755, 54212825, 67095041]"
-                        },
-                        {
-                          "role": "tool",
-                          "tool_call_id": "call_s6kj0jte",
-                          "content": "{\"status\":\"done\"}"
-                        },
-                        {
-                          "role": "assistant",
-                          "content": null,
-                          "tool_calls": [
-                            {
-                              "id": "call_t41uky99",
-                              "type": "function",
-                              "function": {
-                                "name": "awardsAPromotionToACustomer",
-                                "arguments": "{\"invoiceid\":61356291,\"promotionid\":1}"
-                              }
-                            },
-                            {
-                              "id": "call_ql0nbp04",
-                              "type": "function",
-                              "function": {
-                                "name": "awardsAPromotionToACustomer",
-                                "arguments": "{\"invoiceid\":49565075,\"promotionid\":1}"
-                              }
-                            },
-                            {
-                              "id": "call_8lp8epdx",
-                              "type": "function",
-                              "function": {
-                                "name": "awardsAPromotionToACustomer",
-                                "arguments": "{\"invoiceid\":34911755,\"promotionid\":1}"
-                              }
-                            },
-                            {
-                              "id": "call_2jrr8uyb",
-                              "type": "function",
-                              "function": {
-                                "name": "awardsAPromotionToACustomer",
-                                "arguments": "{\"invoiceid\":54212825,\"promotionid\":1}"
-                              }
-                            },
-                            {
-                              "id": "call_cbj8d8lt",
-                              "type": "function",
-                              "function": {
-                                "name": "awardsAPromotionToACustomer",
-                                "arguments": "{\"invoiceid\":67095041,\"promotionid\":1}"
-                              }
-                            }
-                          ]
-                        },
-                        {
-                          "role": "tool",
-                          "tool_call_id": "call_t41uky99",
-                          "content": "{\"status\":\"done\"}"
-                        },
-                        {
-                          "role": "tool",
-                          "tool_call_id": "call_ql0nbp04",
-                          "content": "{\"status\":\"done\"}"
-                        },
-                        {
-                          "role": "tool",
-                          "tool_call_id": "call_8lp8epdx",
-                          "content": "{\"status\":\"done\"}"
-                        },
-                        {
-                          "role": "tool",
-                          "tool_call_id": "call_2jrr8uyb",
-                          "content": "{\"status\":\"done\"}"
-                        },
-                        {
-                          "role": "tool",
-                          "tool_call_id": "call_cbj8d8lt",
-                          "content": "{\"status\":\"done\"}"
-                        }
-                      ]
-                    }
-                  ]
-        - setBody:
-            disabled: true
-            expression:
-              jq:
-                expression: >-
-                  map(
-                      . as $step | {
-                          "step": $step.step,
-                          "execution": {
-                              "user_request": ($step.content[] | select(.role == "user") | .content |= (split("\n") | .[0])) 
-                   ,
-                              "function_calls": (
-                                  [$step.content[] | select(.role == "assistant" and .tool_calls) | {
-                                      "group": [
-                                          .tool_calls[] | . as $call | {
-                                              "function": {
-                                                  "name": (
-                                                      .function.name + ": " + (.function.arguments | fromjson | [leaf_paths as $path | "\($path | join(".")): \(getpath($path))"] | join(", "))
-                                                  ),
-                                              "response": (
-                                                  $step.content[] | select(.role == "tool" and .tool_call_id == $call.id) | .content | fromjson | [leaf_paths as $path | "\($path | join(".")): \(getpath($path))"] | join(", ")
-                                              )
-                                              }
-                                          }
-                                      ]
-                                  }]
-                              )
-                          }
-                      }
-                  )
-        - log:
-            id: log-4253
-            message: ${body}
-        - process:
-            disabled: true
-            ref: composeGraph
-        - to:
-            uri: langchain4j-chat
-            parameters:
-              chatId: graph
-              chatModel: "#chatModelGraphs"
-              chatOperation: CHAT_MULTIPLE_MESSAGES
-            disabled: true
-        - log:
-            id: log-8287
-            message: "after regex: ${body}"

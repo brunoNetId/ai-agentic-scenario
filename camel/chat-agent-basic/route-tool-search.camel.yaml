@@ -1,7 +1,7 @@
 - route:
-    id: search invoices
+    id: tool-query
     from:
-      id: from-2899
+      id: tool-search
       uri: langchain4j-tools
       parameters:
         description: Finds customers interested in a type of product
@@ -100,7 +100,7 @@
             id: log-3317
             message: ${body}
 - route:
-    id: route-2529
+    id: tool-product-types
     from:
       id: from-1827
       uri: langchain4j-tools

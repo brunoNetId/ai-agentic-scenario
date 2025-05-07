@@ -11,47 +11,11 @@
       <h3>Invoice no: <xsl:value-of select="/Invoice/InvoiceNumber"/></h3>
       <span style="margin-right: 200px;">Date of issue:</span>
 
-<!--       <div>
-      <span >Date of issue:</span>
-      </div>
-      <div>
-            <span style="margin-right: 100px; color: white;">Date of issue:</span>
-        </div> -->
-<!-- 
-    <div style="display: flex; ">
-      <div >
-        <span >Date of issue:</span>
-      </div>
-      <div >
-        <span style="margin-right: 110px; color: white;">Date of issue:</span>
-      </div> -->
-
-<!-- 
-      <div style="position: relative;">
-
-      <span style="z-index: 2; margin-right: 200px;">Date of issue:</span>
-      <span style="z-index: 1; margin-right: 200px;">Date of issue:</span>
-      </div> -->
-<!-- 
-<div style="display: grid; grid-template-areas: 'stack';">
-    <span style="grid-area: stack; z-index: 2; color: red;">Text on Top</span>
-    <span style="grid-area: stack; z-index: 1; color: blue;">Text Below</span>
-  </div> -->
-
-      <!-- <div style="position: relative;"> -->
-<!--         <span style="position: absolute; top: 0; left: 0; z-index: 2; margin-right: 200px;">Date of issue:</span>
-        <span style="position: absolute; top: 0; left: 0; z-index: 1; margin-right: 200px;">Date of issue:</span> -->
-      <!-- </div> -->
-
       <span>                
             <xsl:variable name="dateofissue" select="/Invoice/DateOfIssue"/>
             <xsl:value-of select="concat(substring($dateofissue, 5, 2), '/', substring($dateofissue, 7, 2), '/', substring($dateofissue, 1, 4))"/>
       </span>
       <br/>
-      <!-- <span style="color: white;">Dummy Line necessary for PDF to JSON Docling operation.</span> -->
-
-    <!-- </div> -->
-
     </div>
 </div>
 

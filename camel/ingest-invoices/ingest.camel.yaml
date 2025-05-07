@@ -44,12 +44,6 @@
       parameters:
         name: pdf-to-docling-json
       steps:
-        - setVariable:
-            disabled: true
-            expression:
-              simple:
-                expression: ${body}
-            name: invoice-url
         - setBody:
             expression:
               simple:
@@ -67,17 +61,6 @@
         - log:
             id: log-1667
             message: Calling Docling to covert PDF to JSON...\n${body}
-        - removeHeaders:
-            id: removeHeaders-2869
-            disabled: true
-            pattern: ^(?!CamelAws).*$
-        - setHeader:
-            id: setHeader-3267
-            disabled: true
-            expression:
-              constant:
-                expression: ingest
-            name: CamelAwsS3BucketName
         - to:
             id: to-3981
             uri: https
@@ -87,10 +70,6 @@
         - log:
             disabled: false
             message: ${body}
-
-
-
-
 - route:
     id: docling-to-invoice-json
     from:
@@ -107,16 +86,18 @@
                 def removeDuplicates($values):
                   reduce $values[] as $item ({}; if has($item) then . else . + {($item): null} end) | keys_unsorted;
 
-                . as $data | $data.texts
-                | (map(.text | startswith("Seller:")) | index(true)) as $seller_idx
-                | (map(.text | startswith("Client:")) | index(true)) as $client_idx
-                | (map(.text | startswith("ITEMS")) | index(true)) as $items_idx
-                | (map(.text | startswith("SUMMARY")) | index(true)) as $summary_idx
-                | $data.texts | (length) as $last_idx
-                | [$seller_idx,$client_idx,$items_idx,$summary_idx,$last_idx] as $indexes
-                | ($data.tables[0].data.table_cells | map(.text) | [ range(0; length; 8) as $i | { Item: .[$i:$i+8]} ] | .[1:]) as $items
-                | ($data.tables[1].data.table_cells | map(.text) | [ range(0; length; 4) as $i | { Entry: .[$i:$i+4]} ] | .[1:]) as $summary
-                | {
+                . as $data | $data.texts | (map(.text | startswith("Seller:")) |
+                index(true)) as $seller_idx | (map(.text |
+                startswith("Client:")) | index(true)) as $client_idx |
+                (map(.text | startswith("ITEMS")) | index(true)) as $items_idx |
+                (map(.text | startswith("SUMMARY")) | index(true)) as
+                $summary_idx | $data.texts | (length) as $last_idx |
+                [$seller_idx,$client_idx,$items_idx,$summary_idx,$last_idx] as
+                $indexes | ($data.tables[0].data.table_cells | map(.text) | [
+                range(0; length; 8) as $i | { Item: .[$i:$i+8]} ] | .[1:]) as
+                $items | ($data.tables[1].data.table_cells | map(.text) | [
+                range(0; length; 4) as $i | { Entry: .[$i:$i+4]} ] | .[1:]) as
+                $summary | {
                     #uncomment to debug# indexes: $indexes,
                     #uncomment to debug# rangeS: [$seller_idx, next_idx($seller_idx;$indexes)],
                     #uncomment to debug# rangeC: [$client_idx, next_idx($client_idx;$indexes)],
@@ -144,10 +125,8 @@
               unmarshalType: java.util.LinkedHashMap
         - marshal:
             json: {}
-        # - to: xj:identity?transformDirection=XML2JSON
         - log:
             message: "JSON invoice: ${body}"
-
 - route:
     id: prepare-data
     from:
@@ -163,41 +142,37 @@
         - setVariable:
             expression:
               jq:
-                expression: '.InvoiceNumber'
+                expression: .InvoiceNumber
                 resultType: java.lang.String
             name: invoice
         - setVariable:
             expression:
               jq:
-                expression: >-
-                  .Seller.IBAN
+                expression: .Seller.IBAN
             name: iban
         - setVariable:
             expression:
               jq:
-                expression: >-
-                  .Client.TaxId
+                expression: .Client.TaxId
                 resultType: java.lang.String
             name: taxid
         - setVariable:
             expression:
               jq:
-                expression: >-
-                  .Client.Name
+                expression: .Client.Name
                 resultType: java.lang.String
             name: name
         - setVariable:
             expression:
               jq:
-                expression: >-
-                  .Client.Name
-                  | [match("[a-zA-Z]+"; "g") | .string] 
-                  | (.[0] + "@" + .[0] + "-" + .[1] + ".com")
+                expression: .Client.Name | [match("[a-zA-Z]+"; "g") | .string]  | (.[0] + "@" +
+                  .[0] + "-" + .[1] + ".com")
                 resultType: java.lang.String
             name: email
         - log:
-            message: "invoice: ${variable.invoice}, name: ${variable.name}, email: ${variable.email}, iban: ${variable.iban}, taxid: ${variable.taxid}"
-
+            message: "invoice: ${variable.invoice}, name: ${variable.name}, email:
+              ${variable.email}, iban: ${variable.iban}, taxid:
+              ${variable.taxid}"
         - split:
             steps:
               - log:
@@ -209,7 +184,6 @@
             aggregationStrategy: "#myaggregator"
             expression:
               jq:
-                # expression: .Items.Item
                 expression: .Items.Item | if type == "array" then . else [.] end
             parallelProcessing: false
         - log:
@@ -222,16 +196,13 @@
                 expression: ${header.CamelLangChain4jEmbeddingsVector}
                 resultType: dev.langchain4j.data.embedding.Embedding
             name: vector
-
-
-
 - route:
     id: insert in Vector DB
     from:
       uri: direct
       parameters:
         name: to-vector-db
-      steps:            
+      steps:
         - setHeaders:
             headers:
               - expression:
@@ -245,7 +216,7 @@
         - setBody:
             expression:
               simple:
-                expression: >-
+                expression: |-
                   {
                       "collectionName": "mycollection",
                       "data": [{
@@ -266,8 +237,6 @@
               httpUri: https://milvus-milvus.{{remote.host.domain}}/v2/vectordb/entities/insert
         - log:
             message: ${body}
-
-
 - beans:
     - name: myaggregator
       type: org.apache.camel.processor.aggregate.StringAggregationStrategy
@@ -282,15 +251,6 @@
         - log:
             id: log-2723
             message: "File Name: ${header.CamelAwsS3Key}"
-        - to:
-            id: to-2146
-            uri: log
-            parameters:
-              loggerName: InfoLogger
-              showAll: false
-              showBody: false
-              showHeaders: true
-            disabled: true
         - setHeader:
             id: setHeader-6679
             disabled: false
@@ -320,9 +280,6 @@
               operation: createDownloadLink
               secretKey: minio123
             variableReceive: db-invoice-url
-        - log:
-            disabled: true
-            message: "expiry time: ${header. CamelMinioPresignedURLExpirationTime}"
 - beans:
     - name: PostgresqlDataSource
       properties:
@@ -333,7 +290,7 @@
         user: camel
       type: org.postgresql.ds.PGSimpleDataSource
 - route:
-    id: route-3160
+    id: insert-customer-db
     description: insert-customer-db
     from:
       uri: direct:insert-customer-db
@@ -346,5 +303,5 @@
         - to:
             uri: sql
             parameters:
-              query: INSERT INTO INVOICES (id, taxid) VALUES (:#${variable.invoice}, :#${variable.taxid})
-
+              query: INSERT INTO INVOICES (id, taxid) VALUES (:#${variable.invoice},
+                :#${variable.taxid})

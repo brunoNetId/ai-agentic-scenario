@@ -164,7 +164,6 @@ public class graph extends RouteBuilder {
                     """;
 
 
-
                 messages.add(new SystemMessage(systemMessage));
                 messages.add(new UserMessage(payload));
 
@@ -172,7 +171,6 @@ public class graph extends RouteBuilder {
             }
         };
     }
-
 
     @BindToRegistry(lazy=true)
     public static Processor findInvoiceId(){
@@ -182,18 +180,11 @@ public class graph extends RouteBuilder {
 
                 String payload = exchange.getMessage().getBody(String.class);
 
-                // payload = payload.split("invoiceid:\\s*(\\d+)", 0)[0];
-
                 String regex = "invoiceid:\\s*(\\d+)";
                 Pattern pattern = Pattern.compile(regex);
                 Matcher matcher = pattern.matcher(payload);
 
                 matcher.find();
-                // while (matcher.find()) {
-                //     System.out.println("Invoice ID: [" + matcher.group(1)+"]");
-                // }
-
-                // System.out.println("/n/n===========> found invoiceid: " + matcher.group(1));
 
                 String id = "undefined";
                 try{
@@ -203,11 +194,9 @@ public class graph extends RouteBuilder {
                     //could not obtain an ID
                 }
 
-                // exchange.setVariable("invoiceid", matcher.group(1));
                 exchange.setVariable("invoiceid", id);
             }
         };
     }
-
 
 }

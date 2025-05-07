@@ -170,9 +170,6 @@
             simple: ${body.replaceAll('//.*?(?=\n|$)','')}
         - log:
             message: "LLM plan (no comments): ${body}"
-        - stop:
-            id: stop-3687
-            disabled: true
         - setVariable:
             id: setVariable-8683
             expression:

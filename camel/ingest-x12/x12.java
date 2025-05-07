@@ -6,23 +6,11 @@
 //DEPS com.itextpdf:itext7-core:9.1.0@pom
 
 
-// import com.vladsch.flexmark.util.ast.Node;
-// import com.vladsch.flexmark.parser.Parser;
-// import com.vladsch.flexmark.html.HtmlRenderer;
-// import com.vladsch.flexmark.ext.tables.TablesExtension;
-// import com.vladsch.flexmark.util.data.MutableDataSet;
-import com.itextpdf.html2pdf.HtmlConverter;
-
-// import java.io.ByteArrayOutputStream;
-// import java.io.OutputStream;
-// import java.util.Collections;
-
 import org.apache.camel.BindToRegistry;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.PropertyInject;
 import org.apache.camel.builder.RouteBuilder;
-// import org.w3c.dom.Node;
 
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
@@ -41,6 +29,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import com.itextpdf.html2pdf.HtmlConverter;
 
 import com.itextpdf.kernel.geom.Rectangle;
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -54,30 +43,8 @@ import com.itextpdf.kernel.pdf.canvas.parser.PdfTextExtractor;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.IPdfTextLocation;
 import com.itextpdf.kernel.pdf.canvas.parser.listener.RegexBasedLocationExtractionStrategy;
 
-// import com.itextpdf.html2pdf.ConverterProperties;
-// import com.itextpdf.html2pdf.HtmlConverter;
-// import com.itextpdf.kernel.colors.ColorConstants;
-// import com.itextpdf.kernel.events.Event;
-// import com.itextpdf.kernel.events.IEventHandler;
-// import com.itextpdf.kernel.events.PdfDocumentEvent;
-
-// import com.itextpdf.kernel.geom.Rectangle;
-// import com.itextpdf.kernel.pdf.PdfDocument;
-// import com.itextpdf.kernel.pdf.PdfPage;
-// import com.itextpdf.kernel.pdf.PdfWriter;
-// import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
-// import com.itextpdf.layout.Document;
-
-// import com.itextpdf.text.Document;
-// import com.itextpdf.text.DocumentException;
-// import com.itextpdf.text.Rectangle;
-// import com.itextpdf.text.kernel.PdfContentByte;
-// import com.itextpdf.text.pdf.PdfWriter;
-
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-
 
 
 public class x12 extends RouteBuilder {

@@ -83,33 +83,21 @@ public class agent extends RouteBuilder {
                 String payload = exchange.getMessage().getBody(String.class);
                 List<ChatMessage> messages = new ArrayList<>();
 
-                // String systemMessage = """
-                //     You are a helpul customer support assistant.
 
-                //     You will assist in handling operations related to invoices, promotions, notifications.
+                String systemMessage = """
+                    /no_think
 
-                //     %s
+                    You are a helpul customer support assistant.
 
-                //     Respond with short answers.
+                    You will assist in handling operations related to invoices, promotions, notifications.
 
-                //     When providing links to invoices always use the format:
-                //     <iframe src="url to resource" width="100%%" height="680"></iframe>
-                //     """;
+                    %s
 
-                    String systemMessage = """
-                        /no_think
+                    Respond with short answers.
 
-                        You are a helpul customer support assistant.
-    
-                        You will assist in handling operations related to invoices, promotions, notifications.
-    
-                        %s
-    
-                        Respond with short answers.
-    
-                        Only when the response of a tool call provides an URL, wrap it as follows:
-                        <iframe src="url to resource" width="100%%" height="680"></iframe>
-                        """;
+                    Only when the response of a tool call provides an URL, wrap it as follows:
+                    <iframe src="url to resource" width="100%%" height="680"></iframe>
+                    """;
 
                 String tools = """
                     You have access to a collection of tools.
@@ -126,9 +114,6 @@ public class agent extends RouteBuilder {
                     """;
 
 
-                    // Use short answers.
-
-
                 messages.add(new SystemMessage(systemMessage.formatted(tools)));
                 messages.add(new UserMessage(payload));
 
@@ -136,5 +121,4 @@ public class agent extends RouteBuilder {
             }
         };
     }
-
 }
