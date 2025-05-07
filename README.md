@@ -118,7 +118,7 @@ The instructions below assume:
 
 <br/>
 
-### 3. Undeploy the Workshop
+### 3. Undeploy the remote environment
 
 If you wish to undeploy the demo, use the same commands as above, but with:
  - `./uninstall.yaml`
@@ -129,7 +129,7 @@ Instead of:
 
 <br/>
 
-### 4. Undeploy the Workshop
+### 4. Run the demo
 
 > [!WARNING]  
 > The demo documentation is pending to be improved.
