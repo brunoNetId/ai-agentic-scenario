@@ -3,17 +3,54 @@
 > [!WARNING]  
 > This project is currently under development. Please check periodically for changes.
 
-
+---
 
 # Demo: Multi-Agent AI with Apache Camel and Kaoto
 
 This demo will show you the super powers of combining LLMs and Apache Camel to create processes and tools tools that allow users to use natural language translated into actions against backend systems.
+
+---
+
+## Repository Structure
+
+This repository contains several folders and files to help you get started and understand the project:
+
+- **`ansible/`**  
+  Contains Ansible playbooks and configuration files for automating the deployment and undeployment of the demo environment.
+
+- **`camel/`**  
+  Source code for the main Camel logic of the demo, including scripts and modules that power the AI agents and integrations.
+
+- **`config/`**  
+  Configuration for the Camel Instance
+
+- **`demo/`**  
+  Demo invoices (PDFs), a sample transcript, sample X12 EDI document and the [demo/storyline.md](the complete demo flow)
+
+- **`deploy/`**  
+  Schemata for Milvius and the database.
+
+- **`docs/`**  
+  Documentation and guides for running and understanding the demo, including step-by-step instructions and additional background information.
+  [docs/README.md](Explains how to set up the demo)
+  [docs/prompts.md](Has example prompts you can use)
+
+- **`scripts/`**  
+  Resources to start the demo and the agents.
+
+- **`README.md`**  
+  This file. Provides an overview and instructions for using the repository.
+
+You may also find additional files and folders for configuration, examples, or utilities as the project evolves.
+
+---
 
 ## Tested with
 
 * RH OpenShift 4.12.12
 * Red Hat build of Apache Camel 4
 
+---
 
 ## Deployment instructions
 
@@ -37,7 +74,7 @@ The demo is designed to operate across two connected environments: your local ma
 The instructions below assume:
 * You either have _Docker_, _Podman_ or `ansible-playbook` installed on your local environment.
 * You have provisioned an OCP instance using RHDP.
-
+NOTE: RHDP is the Red Hat Demo Portal. You most likely won't have access to it. If you do, grab a standard OCP instance. If you don't feel free to use any OCP instance you have at your disposal.
 <br/>
 
 
