@@ -3,8 +3,8 @@
       properties:
         databaseName: demo
         password: camel
-        portNumber: 5432
-        serverName: localhost
+        portNumber: "{{database.postgresql.port}}"
+        serverName: "{{database.postgresql.host}}"
         user: camel
       type: org.postgresql.ds.PGSimpleDataSource
 - route:

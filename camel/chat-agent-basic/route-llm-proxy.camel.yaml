@@ -5,34 +5,28 @@
       uri: netty-http
       parameters:
         bridgeEndpoint: true
-        host: localhost:11400
+        host: "{{ollama.llm.url}}"
         matchOnUriPrefix: true
         protocol: http
       steps:
         - convertBodyTo:
-            id: convertBodyTo-3467
             type: String
         - setVariable:
-            id: setVariable-2686
             description: capture call
             expression:
               simple:
                 expression: ${body}
             name: toolcalls
         - to:
-            id: to-2165
             uri: netty-http
             parameters:
-              host: localhost:11434
+              host: "{{llm.url}}"
               protocol: http
         - convertBodyTo:
-            id: convertBodyTo-3614
             type: String
         - choice:
-            id: choice-9760
             when:
-              - id: when-2735
-                steps:
+              - steps:
                   - wireTap:
                       uri: direct:generate-mermaid
                       variableSend: toolcalls
@@ -47,13 +41,10 @@
         name: generate-mermaid
       steps:
         - transform:
-            disabled: false
             expression:
               jq:
                 expression: .messages[1:]
         - log:
-            id: log-3690
-            disabled: false
             message: "Aggregating result. last: ${variable.global:last}. This round:
               ${body}"
         - aggregate:
@@ -75,7 +66,6 @@
                     - log:
                         message: "split: ${body}, alltools: ${variable.global:alltools}"
                     - setProperty:
-                        disabled: false
                         expression:
                           simple:
                             expression: ${body}
@@ -154,7 +144,6 @@
                             }
                         )
               - log:
-                  id: log-2928
                   message: "Mermaid input: ${body}"
               - process:
                   ref: composeGraph
@@ -175,15 +164,12 @@
               - log:
                   message: "Graph (no think section): ${body}"
               - process:
-                  id: process-9943
                   ref: findInvoiceId
               - log:
-                  id: log-3012
                   message: "Diagram for invoiceid: ${variable.invoiceid}"
               - removeHeaders:
                   pattern: "*"
               - setHeader:
-                  id: setHeader-3789
                   expression:
                     simple:
                       expression: ${variable.invoiceid}
@@ -191,7 +177,7 @@
               - to:
                   uri: http
                   parameters:
-                    httpUri: localhost:8100/dashboard/diagram
+                    httpUri: "{{admin.url}}/dashboard/diagram"
             aggregationStrategy: "#class:org.apache.camel.processor.aggregate.GroupedBodyAg\
               gregationStrategy"
             completionPredicate:

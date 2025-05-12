@@ -218,7 +218,7 @@
         - to:
             uri: http
             parameters:
-              httpUri: localhost:8090/camel/agent
+              httpUri: "{{planner.url}}/camel/agent"
 - route:
     id: approve
     from:

@@ -27,25 +27,37 @@ public class emails extends RouteBuilder {
         // Routes are loaded from YAML files
     }
 
-    private static String LLM_URL;
 
+    //Model URL configuration
+    private static String LLM_URL;
     @PropertyInject("llm.url")
     public void setLlmUrl(String url) {
         LLM_URL = url;
     }
-
     public static String getLlmUrl() {
         return LLM_URL;
     }
+
+    //Model name configuration
+    private static String MODEL_NAME;
+    @PropertyInject("model.emails.name")
+    public void setModelName(String name) {
+        MODEL_NAME = name;
+    }
+    public static String getModelName() {
+        return MODEL_NAME;
+    }
+
 
     @BindToRegistry(lazy=true)
     public static ChatLanguageModel chatModelEmails(){
 
         ChatLanguageModel model = OpenAiChatModel.builder()
             .apiKey("EMPTY")
-            .modelName("qwen2.5:3b-instruct")
+            // .modelName("qwen2.5:3b-instruct")
             // .modelName("qwen2.5:7b-instruct")
             // .modelName("qwen2.5:14b-instruct")
+            .modelName(getModelName())
             .baseUrl("http://"+getLlmUrl()+"/v1/")
             .temperature(0.0)
             .timeout(ofSeconds(180))

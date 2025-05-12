@@ -127,7 +127,7 @@
         - to:
             uri: http
             parameters:
-              httpUri: localhost:8100/dashboard/send
+              httpUri: "{{admin.url}}/dashboard/send"
 - route:
     id: call-agent
     from:
@@ -140,7 +140,7 @@
             id: to-2685
             uri: http
             parameters:
-              httpUri: localhost:8080/camel/chat
+              httpUri: "{{agent.url}}/camel/chat"
 - route:
     id: route-1582
     description: tool-get-interests

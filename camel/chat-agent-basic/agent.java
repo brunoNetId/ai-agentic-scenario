@@ -28,26 +28,26 @@ public class agent extends RouteBuilder {
         // Routes are loaded from YAML files
     }
 
+    //Model URL configuration
     private static String LLM_URL;
-
     @PropertyInject("ollama.llm.url")
     public void setLlmUrl(String url) {
-
-        System.out.println("someone is setting the url: "+url);
-
-        // try {
-        //     throw new Exception("show trace");
-        // } catch (Exception e) {
-        //     e.printStackTrace();
-        //     // TODO: handle exception
-        // }
-
         LLM_URL = url;
     }
-
     public static String getLlmUrl() {
         return LLM_URL;
     }
+
+    //Model name configuration
+    private static String MODEL_NAME;
+    @PropertyInject("model.agent.name")
+    public void setModelName(String name) {
+        MODEL_NAME = name;
+    }
+    public static String getModelName() {
+        return MODEL_NAME;
+    }
+
 
     @BindToRegistry(lazy=true)
     public static ChatLanguageModel chatModelMain(){
@@ -58,12 +58,13 @@ public class agent extends RouteBuilder {
             .apiKey("EMPTY")
             // .modelName("qwen2.5:0.5b-instruct")
             // .modelName("qwen2.5:3b-instruct")
-            .modelName("qwen2.5:7b-instruct")
+            // .modelName("qwen2.5:7b-instruct")
             // .modelName("qwen2.5:14b-instruct")
             // .modelName("granite3.2:2b")
             // .modelName("granite3.2:8b")
             // .modelName("qwen3:8b")
             // .modelName("qwen3:4b")
+            .modelName(getModelName())
             .baseUrl("http://"+getLlmUrl()+"/v1/")
             .temperature(0.0)
             .timeout(ofSeconds(180))
