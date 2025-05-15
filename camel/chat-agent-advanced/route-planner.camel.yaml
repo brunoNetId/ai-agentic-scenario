@@ -215,6 +215,13 @@
               simple:
                 expression: ${body}
             name: thisstep
+        - setProperty:
+            id: setProperty-2075
+            description: default inputs {}
+            disabled: true
+            name: thisinputs
+            simple:
+              expression: "{}"
         - choice:
             id: choice-2397
             when:
@@ -222,21 +229,31 @@
                 steps:
                   - setBody:
                       id: setBody-3759
-                      expression:
-                        simple:
-                          expression: >-
-                            {
-                                "prompt": "${jq(.prompt)}",
-                                "parameters": ${jq(.parameters)},
-                                "constraints": "Use the field 'context' as historical context data",
-                                "context": ${jq(variable:results,map(del(.completed)))}
-                            }
+                      simple:
+                        expression: >-
+                          {
+                              "prompt": "${jq(.prompt)}",
+                              "constraints": "Use the field 'context' as historical context data",
+                              "context": ${jq(variable:results,map(del(.completed, .params)))}
+                          }
+                  - log:
+                      id: log-1060
+                      message: debug1 ${body}
+                  - to:
+                      id: to-3286
+                      uri: log
+                      parameters:
+                        loggerName: deb
+                        showAll: true
                   - setProperty:
                       id: setProperty-1634
                       expression:
                         simple:
                           expression: ${variable.output-${variable.deps}}
                       name: thisinputs
+                  - log:
+                      id: log-3431
+                      message: debug2
                 expression:
                   simple:
                     expression: ${variable.deps} != null
@@ -271,6 +288,9 @@
                   }]
                 source: results
             name: results
+        - log:
+            id: log-3938
+            message: "step results: ${variable.results}"
         - log:
             id: log-2670
             message: "var is: ${variable.output-${exchangeProperty.CamelLoopIndex}}"

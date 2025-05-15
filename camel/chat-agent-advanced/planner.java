@@ -81,8 +81,12 @@ public class planner extends RouteBuilder {
                 //reset activity
                 activity = "";
 
+                //These tools are definitions obtained from the remote agent
+                String agentTools = exchange.getVariable("global:agent-card",String.class);
+
                 String payload = exchange.getMessage().getBody(String.class);
                 List<ChatMessage> messages = new ArrayList<>();
+
 
                 String systemMessage = """
                     Please provide an execution plan.
@@ -106,6 +110,12 @@ public class planner extends RouteBuilder {
                         ]
                     }
 
+                    When a step does not have parameters, specify it as follows:
+
+                        "parameters": {}
+
+                    When a step relates to awarding promotions, ensure you add the following information in the 'description': caution, do not apply apply a promotion more than once per customer.
+
                     Note that JSON does not support comments (double slash), like: // This is a comment.
                     Do not include comments (//) in the JSON output.
 
@@ -116,109 +126,15 @@ public class planner extends RouteBuilder {
 
                     When generating the execution plan, take in account the following tools are available downstream:
 
-                    {
-                      "tools": [
-                        {
-                        "type": "function",
-                        "function": {
-                            "name": "getHTMLLinkToPDFDocumentForGivenInvoiceIdentifier",
-                            "description": "get HTML link to PDF document for given invoice identifier",
-                            "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "invoiceid": {
-                                "type": "string"
-                                }
-                            },
-                            "required": [
-                                "invoiceid"
-                            ]
-                            }
-                        }
-                        },
-                        {
-                        "type": "function",
-                        "function": {
-                            "name": "amendInvoiceWithUserInstructionsDescribedInParameterMessage",
-                            "description": "amend invoice with user instructions described in parameter message",
-                            "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "invoiceid": {
-                                "type": "string"
-                                },
-                                "message": {
-                                "type": "string"
-                                }
-                            },
-                            "required": [
-                                "invoiceid",
-                                "message"
-                            ]
-                            }
-                        }
-                        },
-                        {
-                        "type": "function",
-                        "function": {
-                            "name": "getActivePromotions",
-                            "description": "get active promotions",
-                            "parameters": {
-                            "type": "object",
-                            "properties": {},
-                            "required": []
-                            }
-                        }
-                        },
-                        {
-                        "type": "function",
-                        "function": {
-                            "name": "awardsAPromotionToACustomer",
-                            "description": "awards a promotion to a customer",
-                            "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "invoiceid": {
-                                "type": "number"
-                                },
-                                "promotionid": {
-                                "type": "number"
-                                }
-                            },
-                            "required": [
-                                "invoiceid",
-                                "promotionid"
-                            ]
-                            }
-                        }
-                        },
-                        {
-                        "type": "function",
-                        "function": {
-                            "name": "GetListOfInvoicesForPurchasesOfATypeOfProduct",
-                            "description": "Get list of invoices for purchases of a type of product",
-                            "parameters": {
-                            "type": "object",
-                            "properties": {
-                                "productType": {
-                                "type": "String"
-                                }
-                            },
-                            "required": [
-                                "productType"
-                            ]
-                            }
-                        }
-                        }
-                    ]
-                    }
+                    %s
 
+                    Do not use double curly brackets in your answer "{{ }}"
 
                     """;
 
                 String user = payload;
 
-                messages.add(new SystemMessage(systemMessage));
+                messages.add(new SystemMessage(systemMessage.formatted(agentTools)));
                 messages.add(new UserMessage(user));
 
                 exchange.getIn().setBody(messages);

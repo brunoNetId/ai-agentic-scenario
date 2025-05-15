@@ -1,0 +1,76 @@
+- route:
+    id: route-1607
+    from:
+      id: from-1444
+      uri: timer
+      parameters:
+        period: "1000"
+        repeatCount: "1"
+        timerName: template
+      steps:
+        - setVariable:
+            id: setVariable-3759
+            name: global:agent-card
+            simple:
+              expression: |-
+                {
+                    "tools": []
+                }
+        - loop:
+            id: loop-8453
+            steps:
+              - delay:
+                  id: delay-2809
+                  constant:
+                    expression: "5000"
+              - log:
+                  id: log-1529
+                  message: trying to get agent's card...
+              - doTry:
+                  id: doTry-3280
+                  steps:
+                    - to:
+                        id: to-5482
+                        uri: http
+                        parameters:
+                          httpUri: "{{agent.url}}/camel/card"
+                  doCatch:
+                    - id: doCatch-7313
+                      steps:
+                        - log:
+                            id: log-3408
+                            message: "something went wrong: ${exception.message}"
+                      exception:
+                        - java.lang.Exception
+              - choice:
+                  id: choice-8401
+                  when:
+                    - id: when-2966
+                      steps:
+                        - log:
+                            id: log-3059
+                            disabled: true
+                            message: we have something ${body}
+                        - setVariable:
+                            id: setVariable-3805
+                            name: global:agent-card
+                            simple:
+                              expression: ${body}
+                      simple:
+                        expression: ${body} != null
+              - log:
+                  id: log-1475
+                  disabled: true
+                  message: http result ${body}
+            doWhile: true
+            jq:
+              expression: .tools | length == 0
+              source: global:agent-card
+
+
+        - setBody:
+            jq:
+              expression: '"* " + .tools[].description + "\n"'
+              resultType: String
+        - log:
+            message: Card summary:\n${body}

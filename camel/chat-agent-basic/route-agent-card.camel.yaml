@@ -1,0 +1,87 @@
+- route:
+    id: initialise-card
+    from:
+      uri: timer
+      parameters:
+        repeatCount: "1"
+        timerName: card
+      steps:
+        - process:
+            description: AI message
+            ref: requestCardMessage
+        - to:
+            description: call LLM
+            uri: langchain4j-tools
+            parameters:
+              chatModel: "#chatModelCard"
+              tags: all
+              toolId: myllm
+        - removeHeaders:
+            pattern: "*"
+        - setBody:
+            id: setBody-2285
+            disabled: true
+            simple:
+              expression: "the tools: ${body}"
+        - doTry:
+            id: doTry-7244
+            steps:
+              - to:
+                  id: to-3403
+                  uri: json-validator
+                  parameters:
+                    resourceUri: schema-card.json
+            doCatch:
+              - id: doCatch-3766
+                steps:
+                  - log:
+                      id: log-3054
+                      message: something went wrong ${exception.message}
+                  - to:
+                      id: to-2328
+                      uri: language
+                      parameters:
+                        languageName: constant
+                        resourceUri: classpath:default-card.json
+                exception:
+                  - java.lang.Exception
+        - setVariable:
+            id: setVariable-3238
+            description: set Agent Card
+            name: global:agent-card
+            simple:
+              expression: ${body}
+        - setBody:
+            id: setBody-4214
+            jq:
+              expression: '"* " + .tools[].description + "\n"'
+              resultType: String
+        - log:
+            disabled: true
+            message: Agent card is:\n${variable.global:agent-card}
+        - log:
+            id: log-1521
+            message: Card summary:\n${body}
+- route:
+    id: card
+    from:
+      uri: platform-http:/camel/card
+      steps:
+        - setBody:
+            simple:
+              expression: ${variable.global:agent-card}
+# - route:
+#     id: test-card
+#     from:
+#       uri: timer
+#       parameters:
+#         delay: "10000"
+#         repeatCount: "1"
+#         timerName: testcard
+#       steps:
+#         - to:
+#             uri: http
+#             parameters:
+#               httpUri: localhost:8080/camel/card
+#         - log:
+#             message: the agent's card is:\n${body}

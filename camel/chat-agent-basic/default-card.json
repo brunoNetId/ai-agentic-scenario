@@ -1,0 +1,46 @@
+{
+    "tools": [
+        {
+            "description": "get HTML link to PDF document for given invoice identifier",
+            "purpose": "Generate an HTML link to a PDF document based on an invoice identifier",
+            "parameters": [
+                {"name": "invoiceid", "type": "string"}
+            ]
+        },
+        {
+            "description": "amend invoice with user instructions described in parameter message",
+            "purpose": "Amend an invoice according to the instructions provided in a message",
+            "parameters": [
+                {"name": "invoiceid", "type": "string"},
+                {"name": "message", "type": "string"}
+            ]
+        },
+        {
+            "description": "get active promotions",
+            "purpose": "Retrieve information about current active promotions",
+            "parameters": []
+        },
+        {
+            "description": "awards a promotion to a customer",
+            "purpose": "Award a specific promotion to a customer identified by an invoice ID",
+            "parameters": [
+                {"name": "invoiceid", "type": "number"},
+                {"name": "promotionid", "type": "number"}
+            ]
+        },
+        {
+            "description": "Finds customers interested in a type of product",
+            "purpose": "Identify customers who might be interested in a specific type of product",
+            "parameters": [
+                {"name": "productType", "type": "string"}
+            ]
+        },
+        {
+            "description": "get categories of products from invoice",
+            "purpose": "Retrieve the categories of products listed on an invoice",
+            "parameters": [
+                {"name": "invoiceid", "type": "string"}
+            ]
+        }
+    ]
+}

@@ -5,7 +5,7 @@
       uri: langchain4j-tools
       parameters:
         description: Finds customers interested in a type of product
-        parameter.productType: String
+        parameter.productType: string
         tags: all
         toolId: query
       steps:
@@ -106,6 +106,7 @@
       uri: langchain4j-tools
       parameters:
         description: get categories of products from invoice
+        parameter.invoiceid: string
         tags: all
         toolId: product-types
       steps:
