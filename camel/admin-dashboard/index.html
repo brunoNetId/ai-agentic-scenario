@@ -15,19 +15,22 @@
         .header {
             text-align: center;
             margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
         }
         .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
+            width: 15px;
+            height: 15px;
             border-radius: 50%;
-            margin-left: 10px;
+            display: inline-block;
         }
-        .connected {
-            background-color: green;
+        .status-connected {
+            background-color: #28a745;
         }
-        .disconnected {
-            background-color: red;
+        .status-disconnected {
+            background-color: #dc3545;
         }
         table {
             width: 100%;
@@ -41,31 +44,47 @@
             border-bottom: 1px solid #ddd;
         }
         th {
-            background-color: #e0e7ff;
-            color: #333;
+            background-color: #e9ecef;
+            font-weight: bold;
         }
         tr:nth-child(even) {
-            background-color: #f9f9f9;
+            background-color: #f8f9fa;
         }
         tr:nth-child(odd) {
             background-color: #ffffff;
         }
-        .button {
-            padding: 8px 12px;
+        .id-column {
+            width: 100px;
+        }
+        .summary-column, .execution-plan-column {
+            width: 30%;
+        }
+        .status-column {
+            width: 150px;
+        }
+        .actions-column {
+            width: 250px;
+        }
+        .details-column {
+            width: 150px;
+        }
+        .action-btn {
+            padding: 6px 12px;
+            margin: 0 5px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            margin-right: 5px;
+            font-size: 14px;
         }
-        .approve {
+        .approve-btn {
             background-color: #28a745;
             color: white;
         }
-        .discard {
+        .discard-btn {
             background-color: #dc3545;
             color: white;
         }
-        .remove {
+        .remove-btn {
             background-color: #6c757d;
             color: white;
         }
@@ -73,11 +92,12 @@
             display: inline-block;
             width: 16px;
             height: 16px;
-            border: 2px solid #ccc;
-            border-top: 2px solid #333;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
             border-radius: 50%;
             animation: spin 1s linear infinite;
             vertical-align: middle;
+            margin-right: 5px;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -90,26 +110,46 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background-color: white;
-            padding: 20px;
-            border-radius: 8px;
+            border: 1px solid #ccc;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             z-index: 1000;
-            max-width: 80%;
-            max-height: 80%;
+            max-height: 80vh;
             overflow: auto;
         }
-        .popup-content {
-            margin-bottom: 20px;
+        .popup-header {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            position: sticky;
+            top: 0;
+            z-index: 1;
         }
-        .popup-close {
-            display: block;
-            margin: 0 auto;
-            padding: 10px 20px;
-            background-color: #007bff;
+        .popup-content {
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .popup-footer {
+            padding: 15px;
+            text-align: center;
+            border-top: 1px solid #ddd;
+            position: sticky;
+            bottom: 0;
+            background-color: #f8f9fa;
+        }
+        .close-btn {
+            background-color: #28a745;
             color: white;
+            padding: 8px 16px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
+        }
+        .diagram-popup {
+            width: 90%;
+            max-width: 1200px;
+        }
+        .summary-popup {
+            width: 600px;
         }
         .overlay {
             display: none;
@@ -121,37 +161,39 @@
             background-color: rgba(0,0,0,0.5);
             z-index: 999;
         }
-        .equal-width {
-            width: 25%;
-        }
-        .status-column {
-            width: 120px;
-        }
-        .id-column {
-            width: 100px;
-        }
-        .actions-column {
-            width: 200px;
-        }
-        .details-column {
-            width: 150px;
-        }
         ul {
             margin: 0;
             padding-left: 20px;
         }
+        .details-column ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .details-column li {
+            margin-bottom: 5px;
+        }
+        .details-column a {
+            color: #007bff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .details-column a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
+    <div class="overlay" id="overlay"></div>
     <div class="header">
-        <h1>Admin Dashboard <span id="statusIndicator" class="status-indicator disconnected"></span></h1>
+        <h1>Admin Dashboard</h1>
+        <span id="statusIndicator" class="status-indicator status-disconnected"></span>
     </div>
     <table id="adminTable">
         <thead>
             <tr>
                 <th class="id-column">ID</th>
-                <th class="equal-width">Summary</th>
-                <th class="equal-width">Execution Plan</th>
+                <th class="summary-column">Summary</th>
+                <th class="execution-plan-column">Execution Plan</th>
                 <th class="status-column">Status</th>
                 <th class="actions-column">Actions</th>
                 <th class="details-column">Details</th>
@@ -160,24 +202,37 @@
         <tbody></tbody>
     </table>
 
-    <div id="overlay" class="overlay"></div>
     <div id="popup" class="popup">
-        <h2 id="popupTitle"></h2>
-        <div id="popupContent" class="popup-content"></div>
-        <button class="popup-close" onclick="closePopup()">Close</button>
+        <div class="popup-header">
+            <h2 id="popupTitle"></h2>
+        </div>
+        <div class="popup-content" id="popupContent"></div>
+        <div class="popup-footer">
+            <button class="close-btn" onclick="closePopup()">Close</button>
+        </div>
     </div>
 
     <script>
-        let ws;
+        let ws = null;
+        let reconnectInterval = null;
         const tableBody = document.querySelector('#adminTable tbody');
         const statusIndicator = document.getElementById('statusIndicator');
+        const popup = document.getElementById('popup');
+        const popupTitle = document.getElementById('popupTitle');
+        const popupContent = document.getElementById('popupContent');
+        const overlay = document.getElementById('overlay');
 
         function connectWebSocket() {
             ws = new WebSocket('ws://localhost:8100');
 
             ws.onopen = () => {
-                statusIndicator.classList.remove('disconnected');
-                statusIndicator.classList.add('connected');
+                console.log('WebSocket connected');
+                statusIndicator.classList.remove('status-disconnected');
+                statusIndicator.classList.add('status-connected');
+                if (reconnectInterval) {
+                    clearInterval(reconnectInterval);
+                    reconnectInterval = null;
+                }
             };
 
             ws.onmessage = (event) => {
@@ -186,142 +241,156 @@
             };
 
             ws.onclose = () => {
-                statusIndicator.classList.remove('connected');
-                statusIndicator.classList.add('disconnected');
-                setTimeout(connectWebSocket, 1000);
+                console.log('WebSocket disconnected');
+                statusIndicator.classList.remove('status-connected');
+                statusIndicator.classList.add('status-disconnected');
+                if (!reconnectInterval) {
+                    reconnectInterval = setInterval(connectWebSocket, 1000);
+                }
             };
 
-            ws.onerror = () => {
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
                 ws.close();
             };
         }
 
         function handleServerEvent(data) {
-            if (data.executionSummary) {
-                updateExecutionSummary(data);
-            } else if (data.diagram) {
-                updateDiagram(data);
-            } else {
+            if (data.id && data.summary && data.executionPlan) {
                 addOrUpdateRow(data);
+            } else if (data.id && data.status && data.executionSummary) {
+                updateRowWithSummary(data);
+            } else if (data.id && data.diagram) {
+                updateRowWithDiagram(data);
             }
         }
 
         function addOrUpdateRow(data) {
-            let row = document.querySelector(`tr[data-id="${data.id}"]`);
+            let row = document.getElementById(`row-${data.id}`);
             if (!row) {
                 row = document.createElement('tr');
-                row.setAttribute('data-id', data.id);
-                row.innerHTML = `
-                    <td>${data.id}</td>
-                    <td>${data.summary}</td>
-                    <td><ul>${data.executionPlan.map(plan => `<li>${plan}</li>`).join('')}</ul></td>
-                    <td class="status">Pending Approval</td>
-                    <td class="actions">
-                        <button class="button approve" onclick="handleAction('${data.id}', 'approve')">Approve</button>
-                        <button class="button discard" onclick="handleAction('${data.id}', 'discard')">Discard</button>
-                    </td>
-                    <td class="details"></td>
-                `;
+                row.id = `row-${data.id}`;
                 tableBody.appendChild(row);
             }
+
+            const executionPlanHtml = data.executionPlan.map(step => `<li>${escapeHtml(step)}</li>`).join('');
+            row.innerHTML = `
+                <td class="id-column">${data.id}</td>
+                <td class="summary-column">${escapeHtml(data.summary)}</td>
+                <td class="execution-plan-column"><ul>${executionPlanHtml}</ul></td>
+                <td class="status-column">Pending Approval</td>
+                <td class="actions-column">
+                    <button class="action-btn approve-btn" onclick="handleAction('${data.id}', 'approve')">Approve</button>
+                    <button class="action-btn discard-btn" onclick="handleAction('${data.id}', 'discard')">Discard</button>
+                </td>
+                <td class="details-column"><ul></ul></td>
+            `;
         }
 
-        function updateExecutionSummary(data) {
-            const row = document.querySelector(`tr[data-id="${data.id}"]`);
+        function updateRowWithSummary(data) {
+            const row = document.getElementById(`row-${data.id}`);
             if (row) {
-                const statusCell = row.querySelector('.status');
-                statusCell.innerHTML = 'Completed';
-                const detailsCell = row.querySelector('.details');
-                detailsCell.innerHTML = `<a href="#" onclick="showExecutionSummary('${data.id}')">View Summary</a>`;
-                row.dataset.executionSummary = JSON.stringify(data.executionSummary).replace(/"/g, '&quot;');
+                const statusCell = row.querySelector('.status-column');
+                const detailsCell = row.querySelector('.details-column ul');
+                statusCell.textContent = 'Completed';
+
+                const summaryHtml = formatExecutionSummary(data.executionSummary);
+                const summaryLink = document.createElement('li');
+                summaryLink.innerHTML = `<a onclick="showSummaryPopup('${data.id}', \`${summaryHtml}\`)">View summary</a>`;
+                detailsCell.appendChild(summaryLink);
             }
         }
 
-        function updateDiagram(data) {
-            const row = document.querySelector(`tr[data-id="${data.id}"]`);
+        function updateRowWithDiagram(data) {
+            const row = document.getElementById(`row-${data.id}`);
             if (row) {
-                const detailsCell = row.querySelector('.details');
-                detailsCell.innerHTML += `<br><a href="#" onclick="showDiagram('${data.id}')">View Diagram</a>`;
-                row.dataset.diagram = data.diagram;
+                const detailsCell = row.querySelector('.details-column ul');
+                const diagramLink = document.createElement('li');
+                diagramLink.innerHTML = `<a onclick="showDiagramPopup('${data.id}', '${data.diagram}')">View diagram</a>`;
+                detailsCell.appendChild(diagramLink);
             }
+        }
+
+        function formatExecutionSummary(summary) {
+            let html = '<ul>';
+            for (const [step, details] of Object.entries(summary)) {
+                html += `<li><strong>${escapeHtml(step)}:</strong> `;
+                if (Array.isArray(details)) {
+                    html += '<ul>' + details.map(detail => `<li>${escapeHtml(detail)}</li>`).join('') + '</ul>';
+                } else {
+                    html += escapeHtml(details);
+                }
+                html += '</li>';
+            }
+            html += '</ul>';
+            return html;
         }
 
         function handleAction(id, action) {
-            const row = document.querySelector(`tr[data-id="${id}"]`);
+            const row = document.getElementById(`row-${id}`);
             if (!row) return;
 
-            const statusCell = row.querySelector('.status');
-            const actionsCell = row.querySelector('.actions');
+            const statusCell = row.querySelector('.status-column');
+            const actionsCell = row.querySelector('.actions-column');
 
             if (action === 'discard') {
-                statusCell.innerHTML = 'Discarded';
-                actionsCell.innerHTML = `<button class="button remove" onclick="handleAction('${id}', 'remove')">Remove</button>`;
+                statusCell.textContent = 'Discarded';
+                actionsCell.innerHTML = `<button class="action-btn remove-btn" onclick="handleAction('${id}', 'remove')">Remove</button>`;
             } else if (action === 'approve') {
-                statusCell.innerHTML = 'Processing... <span class="spinner"></span>';
-                actionsCell.innerHTML = `<button class="button remove" onclick="handleAction('${id}', 'remove')">Remove</button>`;
-                ws.send(JSON.stringify({ id, action: 'approve' }));
+                statusCell.innerHTML = '<span class="spinner"></span>Processing...';
+                actionsCell.innerHTML = `<button class="action-btn remove-btn" onclick="handleAction('${id}', 'remove')">Remove</button>`;
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ id, action: 'approve' }));
+                }
             } else if (action === 'remove') {
                 row.remove();
-                ws.send(JSON.stringify({ id, action: 'remove' }));
-            }
-        }
-
-        function showExecutionSummary(id) {
-            const row = document.querySelector(`tr[data-id="${id}"]`);
-            if (!row || !row.dataset.executionSummary) return;
-
-            const summary = JSON.parse(row.dataset.executionSummary.replace(/&quot;/g, '"'));
-            let content = '<ul>';
-            for (const [step, details] of Object.entries(summary)) {
-                content += `<li><strong>${step}</strong>: `;
-                if (Array.isArray(details)) {
-                    content += '<ul>' + details.map(item => `<li>${item}</li>`).join('') + '</ul>';
-                } else {
-                    content += details;
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ id, action: 'remove' }));
                 }
-                content += '</li>';
             }
-            content += '</ul>';
-
-            document.getElementById('popupTitle').textContent = 'Execution Summary';
-            document.getElementById('popupContent').innerHTML = content;
-            showPopup();
         }
 
-        function showDiagram(id) {
-            const row = document.querySelector(`tr[data-id="${id}"]`);
-            if (!row || !row.dataset.diagram) return;
-
-            const diagramCode = atob(row.dataset.diagram);
-            const content = `<div id="mermaidDiagram">${diagramCode}</div>`;
-
-            document.getElementById('popupTitle').textContent = 'Execution Diagram';
-            document.getElementById('popupContent').innerHTML = content;
-
-
-            popup.style.width = '90%';
-            popup.style.maxWidth = '1200px';
-
-            showPopup();
-
-            mermaid.init(undefined, document.getElementById('mermaidDiagram'));
+        function showSummaryPopup(id, summaryHtml) {
+            popup.classList.remove('diagram-popup');
+            popup.classList.add('summary-popup');
+            popupTitle.textContent = 'Execution Summary';
+            popupContent.innerHTML = summaryHtml;
+            popup.style.display = 'block';
+            overlay.style.display = 'block';
         }
 
-        function showPopup() {
-            document.getElementById('overlay').style.display = 'block';
-            document.getElementById('popup').style.display = 'block';
+        function showDiagramPopup(id, base64Diagram) {
+            popup.classList.remove('summary-popup');
+            popup.classList.add('diagram-popup');
+            popupTitle.textContent = 'Execution Diagram';
+            const diagramCode = atob(base64Diagram);
+            popupContent.innerHTML = `<div class="mermaid">${diagramCode}</div>`;
+            popup.style.display = 'block';
+            overlay.style.display = 'block';
+            mermaid.init(undefined, popupContent.querySelector('.mermaid'));
         }
 
         function closePopup() {
-            document.getElementById('overlay').style.display = 'none';
-            document.getElementById('popup').style.display = 'none';
-            document.getElementById('popupContent').innerHTML = '';
-            
+            popup.style.display = 'none';
+            overlay.style.display = 'none';
+            popup.classList.remove('diagram-popup', 'summary-popup');
             popup.style.width = '';
             popup.style.maxWidth = '';
         }
 
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Initialize Mermaid
         mermaid.initialize({ startOnLoad: false });
+
+        // Connect to WebSocket
         connectWebSocket();
     </script>
 </body>

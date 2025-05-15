@@ -143,26 +143,11 @@
                                 }
                             }
                         )
-              - log:
-                  message: "Mermaid input: ${body}"
-              - process:
-                  ref: composeGraph
               - to:
-                  uri: langchain4j-chat
+                  id: to-3376
+                  uri: direct
                   parameters:
-                    chatId: graph
-                    chatModel: "#chatModelGraphs"
-                    chatOperation: CHAT_MULTIPLE_MESSAGES
-              - log:
-                  message: |-
-                    graph:
-                    ${body}
-              - setBody:
-                  expression:
-                    simple:
-                      expression: ${body.replaceAll('(?s)<think>.*</think>','').trim()}
-              - log:
-                  message: "Graph (no think section): ${body}"
+                    name: to-mermaid
               - process:
                   ref: findInvoiceId
               - log:

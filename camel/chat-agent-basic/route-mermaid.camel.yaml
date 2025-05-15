@@ -1,0 +1,24 @@
+- route:
+    id: to-mermaid
+    from:
+      id: to-mermaid
+      uri: direct
+      parameters:
+        name: to-mermaid
+      steps:
+        - log:
+            message: "mermaid input: ${body}"
+        - unmarshal:
+            id: unmarshal-4037
+            json: {}
+        - marshal:
+            id: marshal-2064
+            jacksonXml: {}
+        - to:
+            id: to-4124
+            uri: xslt-saxon
+            parameters:
+              resourceUri: mermaid.xsl
+        - log:
+            id: log-1117
+            message: "mermaid output: ${body}"

@@ -12,7 +12,7 @@
             </DateOfIssue>
             <Seller>
                 <Name>
-                    <xsl:value-of select="&quot;Bruno Meseguer&quot;"/>
+                    <xsl:value-of select="/X12_850/Header/N1Loop[1]/N1/N1-02"/>
                 </Name>
                 <Address>
                     <Street>
@@ -37,7 +37,7 @@
             </Seller>
             <Client>
                 <Name>
-                    <xsl:value-of select="&quot;Markus Eisele&quot;"/>
+                    <xsl:value-of select="/X12_850/Header/N1Loop[2]/N1/N1-02"/>
                 </Name>
                 <Address>
                     <Street>

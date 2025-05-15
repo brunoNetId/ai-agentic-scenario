@@ -11,7 +11,7 @@ The table will have the following columns:
 - Summary: to display a summary description
 - Execution Plan: to display a plan to execute the task
 - Status: to display the status of the task, in one or two words (small width)
-- Actions: to contain buttons the user clicks
+- Actions: to contain buttons the user clicks (250px)
 - Details: to contain clickable items, 1 item per line, as bullet points, to open on a popup.
 
 The Summary and Execution Plan should be of equal width.
@@ -59,15 +59,20 @@ When the local server completes processing the task it will push a completion ev
 
 When the completion event is received, replace the "Processing..." status with "Completed" and include in the details column a link that will render in a popup the details of the execution summary. Be careful when using JSON.stringify as it produces double quotes that might clash with HTML quotes and break the code.
 
-Title the popup for such events with "Execution Summary" and include a "Close" button at the bottom center.
+Title the popup for such events with "Execution Summary" and include a "Close" button (green) at the bottom center.
 
-Later, the local server may push a new event containing a diagram of the execution encoded in Base64, similar to this:
+The local server also pushes an event containing a diagram illustrating the execution, encoded in Base64, similar to this:
 {
     "id":"123456",
     "diagram": encoded in base64
 }
 
 When the diagram event is received, include in the details column a link that will render in a popup the Mermaid diagram showing the execution flow.
+
+Both events (execution summary and diagram) may arrive in different order. Ensure the arrival of the second does not impact (or delete or eliminate) the link associated to the first event.
+
+The link to the execution summary should be called "View summary".
+The link to the execution diagram should be called "View diagram".
 
 Use Mermaid version 11.6.0.
 
@@ -79,6 +84,7 @@ Good settings for displaying the diagram are:
 
 Reset popup width settings to default when closed.
 
-Title the diagram popup for such events with "Execution Diagram" and include a "Close" button at the bottom center.
+Title the diagram popup for such events with "Execution Diagram" and include a "Close" button (green) at the bottom center.
+Ensure only the diagram is scrollable, the title and close button should remain static in the popup.
 
 When the button 'Remove' is clicked by the user, the row should be eliminated from the table, and the page should send an event to the server that includes the id of the row and the action taken by the user.
