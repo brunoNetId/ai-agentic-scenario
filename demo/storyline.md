@@ -100,7 +100,7 @@ LLM: All promotions have been successfully awarded.
 - **Launch a complex prompt:**
 
   ```
-  There is a mistake in invoice 67095041, the tax applied is incorrect, it should be 5 percent instead of 10, please fix it. Also, please find the current promotions programs available, and award a promotion to the customer related to wine products. Actually, apply the same promotion to all customers interested in wine.
+  There is a mistake in invoice 67095041, the tax applied is incorrect, it should be 5 percent instead of 10, please fix it. Also, please find the current promotions programs available, and award a promotion to the customer related to wine products. Actually, find other customers interested in wine, and apply the same promotion.
   ```
 
 - **Show side-by-side Dashboard & Chat:** Visualize the system's response and workflow in real time.
