@@ -48,7 +48,7 @@ You may also find additional files and folders for configuration, examples, or u
 ## Tested with
 
 * RH OpenShift 4.12.12
-* Red Hat build of Apache Camel 4
+* Red Hat build of Apache Camel 4.12
 
 ---
 
