@@ -13,20 +13,20 @@
       steps:
         - log: "invoice key: ${header.CamelAwsS3Key}"
 
-- route:
-    id: clean generated
-    from:
-      uri: aws2-s3
-      parameters:
-        accessKey: minio
-        bucketNameOrArn: generated
-        forcePathStyle: true
-        overrideEndpoint: true
-        region: ap-south-2
-        secretKey: minio123
-        uriEndpointOverride: https://minio-api-demo.{{remote.host.domain}}
-      steps:
-        - log: "generated key: ${header.CamelAwsS3Key}"
+# - route:
+#     id: clean generated
+#     from:
+#       uri: aws2-s3
+#       parameters:
+#         accessKey: minio
+#         bucketNameOrArn: generated
+#         forcePathStyle: true
+#         overrideEndpoint: true
+#         region: ap-south-2
+#         secretKey: minio123
+#         uriEndpointOverride: https://minio-api-demo.{{remote.host.domain}}
+#       steps:
+#         - log: "generated key: ${header.CamelAwsS3Key}"
 
 - route:
     id: clean outbox

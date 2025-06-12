@@ -72,7 +72,7 @@ eval "$CAMEL_STOP_CLEAN_BUCKETS"
 echo "Resetting buckets..."
 eval "$CAMEL_START_RESET_BUCKETS"
 
-echo "stop resetting..."
+echo "Stop resetting..."
 eval "$CAMEL_STOP_RESET_BUCKETS"
 
 echo "Ingesting invoices..."
@@ -80,6 +80,7 @@ eval "$CAMEL_START_INGEST"
 
 
 echo "Checking for inflight ingest processes..."
+sleep 5
 
 while true; do
     # Run camel get inflight ingest and capture output
@@ -96,5 +97,12 @@ while true; do
 done
 
 
-echo "stop ingesting..."
+echo "Stop ingesting..."
 eval "$CAMEL_STOP_INGEST"
+
+echo "Resetting LLMs keep-alive..."
+curl http://localhost:11434/api/generate -d '{"model": "qwen2.5:3b-instruct", "keep_alive": "2h"}' > /dev/null 2>&1
+curl http://localhost:11434/api/generate -d '{"model": "qwen2.5:7b-instruct", "keep_alive": "2h"}' > /dev/null 2>&1
+curl http://localhost:11434/api/generate -d '{"model": "qwen2.5:14b-instruct", "keep_alive": "2h"}' > /dev/null 2>&1
+
+echo "All done."

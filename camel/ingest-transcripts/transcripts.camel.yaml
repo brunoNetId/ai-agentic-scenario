@@ -59,49 +59,7 @@
         - log:
             id: log-5080
             message: "summary is: ${variable.summary}"
-        - removeHeaders:
-            id: removeHeaders-3061
-            disabled: true
-            pattern: "*"
-        - setHeader:
-            id: setHeader-1636
-            disabled: true
-            expression:
-              constant:
-                expression: text/*
-            name: CamelAwsS3ContentType
-        - toD:
-            uri: minio
-            parameters:
-              accessKey: minio
-              bucketName: generated
-              endpoint: https://minio-api-demo.{{remote.host.domain}}
-              keyName: ${variable.filename}_${date:now:HH-mm-ss}.txt
-              secretKey: minio123
-            disabled: true
-            variableSend: conversation
-        - toD:
-            uri: minio
-            parameters:
-              accessKey: minio
-              bucketName: generated
-              endpoint: https://minio-api-demo.{{remote.host.domain}}
-              keyName: ${variable.filename}summary_${date:now:HH-mm-ss}.txt
-              secretKey: minio123
-            disabled: true
-            variableSend: summary
-# - route:
-#     id: route-1543
-#     from:
-#       id: from-1127
-#       uri: timer
-#       parameters:
-#         period: "1000"
-#         repeatCount: "1"
-#         timerName: template
-#       steps:
-#         - stop:
-#             id: stop-1547
+
 - route:
     id: to-admin
     from:
