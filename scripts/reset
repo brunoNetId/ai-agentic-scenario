@@ -64,15 +64,16 @@ eval "$MILVUS_DELETE_ALL"
 
 echo ""
 echo "Cleaning buckets..."
-eval "$CAMEL_START_CLEAN_BUCKETS"
+# eval "$CAMEL_START_CLEAN_BUCKETS"
+resources/cleanbuckets
 
-echo "Stopping cleaning..."
-eval "$CAMEL_STOP_CLEAN_BUCKETS"
+# echo "Stopping cleaning..."
+# eval "$CAMEL_STOP_CLEAN_BUCKETS"
 
 echo "Resetting buckets..."
 eval "$CAMEL_START_RESET_BUCKETS"
 
-echo "Stop resetting..."
+# echo "Stop resetting..."
 eval "$CAMEL_STOP_RESET_BUCKETS"
 
 echo "Ingesting invoices..."
@@ -80,7 +81,6 @@ eval "$CAMEL_START_INGEST"
 
 
 echo "Checking for inflight ingest processes..."
-sleep 5
 
 while true; do
     # Run camel get inflight ingest and capture output

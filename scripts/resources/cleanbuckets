@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Connectivity
+DOMAIN=$(grep '^remote\.host\.domain=' ../config/domain.properties | cut -d'=' -f2)
+ENDPOINT="https://minio-ui-demo.$DOMAIN"
+
+# Login to Minio API
+curl $ENDPOINT/api/v1/login \
+--silent \
+--header 'Content-Type: application/json' \
+--cookie-jar cookies.txt \
+--data '{"accessKey":"minio","secretKey":"minio123"}'
+
+
+BUCKET="invoices"
+DELETE_OBJ=$(
+            curl -s -X GET \
+            --cookie cookies.txt \
+            "$ENDPOINT/api/v1/buckets/$BUCKET/objects" | jq 'if .objects then [.objects[] | {"path": .name}] else [] end'
+          )
+
+echo "Invoices to delete: `echo $DELETE_OBJ | jq length`"
+
+curl -s -X POST \
+--cookie cookies.txt \
+--header 'Content-Type: application/json' \
+"$ENDPOINT/api/v1/buckets/$BUCKET/delete-objects" \
+-d "$DELETE_OBJ"
+
+echo "Done."
+
+
+
+BUCKET="outbox"
+DELETE_OBJ=$(
+            curl -s -X GET \
+            --cookie cookies.txt \
+            "$ENDPOINT/api/v1/buckets/$BUCKET/objects" | jq 'if .objects then [.objects[] | {"path": .name}] else [] end'
+          )
+
+echo "Outbox mails to delete: `echo $DELETE_OBJ | jq length`"
+
+curl -s -X POST \
+--cookie cookies.txt \
+--header 'Content-Type: application/json' \
+"$ENDPOINT/api/v1/buckets/$BUCKET/delete-objects" \
+-d "$DELETE_OBJ"
+
+echo "Done."
