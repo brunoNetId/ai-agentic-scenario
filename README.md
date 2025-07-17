@@ -9,6 +9,8 @@
 
 This demo will show you the super powers of combining LLMs and Apache Camel to create processes and tools tools that allow users to use natural language translated into actions against backend systems.
 
+[![Watch the video](https://img.youtube.com/vi/WrBmfaY7IB8/hqdefault.jpg)](https://youtu.be/WrBmfaY7IB8)
+
 ---
 
 ## Repository Structure
